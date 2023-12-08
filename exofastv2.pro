@@ -1120,10 +1120,14 @@
 ;  2023/12 -- Missed a lot of updates here (see git
 ;             history). Documentation cleanup.
 ;-
+;  2023/03 -- Dan Stevens (UMD): model Gaia spectrophotometry and write the
+;             "prettymodel" NextGen atmosphere to file for start/amoeba/mcmc.
+;
+;
 pro exofastv2, priorfile=priorfile, $
                prefix=prefix,$
                ;; data file inputs
-               rvpath=rvpath, tranpath=tranpath, $
+               rvpath=rvpath, tranpath=tranpath, $ ;sb2path=sb2path
                astrompath=astrompath, dtpath=dtpath, $
                ;; SED model inputs
                fluxfile=fluxfile,mistsedfile=mistsedfile,$
@@ -1145,7 +1149,7 @@ pro exofastv2, priorfile=priorfile, $
                diluted=diluted, fitdilute=fitdilute, $
                ;; planet inputs
                nplanets=nplanets, $
-               fittran=fittran, fitrv=fitrv, $
+               fittran=fittran, fitrv=fitrv, $ ;fitsb2=fitsb2
                rossiter=rossiter, fitdt=fitdt, $
                circular=circular, tides=tides, $ 
                alloworbitcrossing=alloworbitcrossing, $
@@ -1182,7 +1186,7 @@ pro exofastv2, priorfile=priorfile, $
                mksummarypg=mksummarypg,$
                nocovar=nocovar, $
                plotonly=plotonly, bestonly=bestonly, $
-               badstart=badstart
+               badstart=badstart,fitgaia=fitgaia
                
 ;; this is the stellar system structure
 COMMON chi2_block, ss
@@ -1201,7 +1205,7 @@ if lmgr(/vm) or lmgr(/runtime) then begin
    if not file_test(argfile) then message, argfile + ', containing desired arguments to EXOFASTv2, does not exist'
    readargs, argfile, priorfile=priorfile, $
              prefix=prefix,$
-             rvpath=rvpath, tranpath=tranpath, $
+             rvpath=rvpath, tranpath=tranpath, $ ;sb2path=sb2path
              astrompath=astrompath, dtpath=dtpath, $
              fluxfile=fluxfile,mistsedfile=mistsedfile,$
              sedfile=sedfile,specphotpath=specphotpath,$
@@ -1217,7 +1221,7 @@ if lmgr(/vm) or lmgr(/runtime) then begin
              nstars=nstars,starndx=starndx, $
              diluted=diluted,fitdilute=fitdilute, $
              nplanets=nplanets, $
-             fittran=fittran, fitrv=fitrv, $
+             fittran=fittran, fitrv=fitrv, $;fitsb2=fitsb2
              rossiter=rossiter, fitdt=fitdt, $
              circular=circular, tides=tides, $ 
              alloworbitcrossing=alloworbitcrossing, $
@@ -1246,7 +1250,7 @@ if lmgr(/vm) or lmgr(/runtime) then begin
              mksummarypg=mksummarypg,$
              nocovar=nocovar,$
              plotonly=plotonly, bestonly=bestonly,$
-             logname=logname
+             logname=logname,fitgaia=fitgaia
 
 endif
 
@@ -1316,12 +1320,33 @@ endelse
 spawn, 'git -C $EXOFAST_PATH rev-parse HEAD', output, stderr
 if stderr[0] eq '' then printandlog, "Using EXOFASTv2 commit " + output[0], logname
 
+;; refine the stellar starting values based on the priors and SED (if supplied)
+;; this can be really useful if you don't know the rough stellar
+;; parameters, especially for the MIST models, but is a waste of time if you do
+if nplanets ne 0 and keyword_set(refinestar) then begin
+   printandlog, 'Refining stellar parameters', logname
+   ss = mkss(fluxfile=fluxfile,mistsedfile=mistsedfile,$
+             fbolsedfloor=fbolsedfloor,teffsedfloor=teffsedfloor, fehsedfloor=fehsedfloor, oned=oned,nplanet=0, nstars=nstars, $
+             starndx=starndx,priorfile=priorfile, $
+             teffemfloor=teffemfloor, fehemfloor=fehemfloor, rstaremfloor=rstaremfloor,ageemfloor=ageemfloor,$
+             yy=yy, torres=torres, nomist=nomist, parsec=parsec, mann=mann, logname=logname, debug=stardebug, verbose=verbose, $
+             mkgif=mkgif,chi2func=chi2func,fitgaia=fitgaia,prefix=prefix)
+   if (size(ss))[2] ne 8 then return
+
+   pars = str2pars(ss,scale=scale,name=starparnames, angular=angular)
+   staronlybest = exofast_amoeba(1d-5,function_name=chi2func,p0=pars,scale=scale,nmax=nmax)
+   if staronlybest[0] eq -1 then begin
+      printandlog, 'best fit for stellar parameters failed', logname
+      stop
+   endif
+endif
+
 ;; create the master structure 
 ;; keyword inheritance would be helpful here, but it might break multi-threading
 ss = mkss(priorfile=priorfile, $
           prefix=prefix,$
           ;; data file inputs
-          rvpath=rvpath, tranpath=tranpath, $
+          rvpath=rvpath, tranpath=tranpath, $ ;sb2path=sb2path
           astrompath=astrompath, dtpath=dtpath, $
           ;; SED model inputs
           fluxfile=fluxfile, mistsedfile=mistsedfile, $
@@ -1343,7 +1368,7 @@ ss = mkss(priorfile=priorfile, $
           diluted=diluted, fitdilute=fitdilute, $
           ;; planet inputs
           nplanets=nplanets, $
-          fittran=fittran,fitrv=fitrv,$
+          fittran=fittran,fitrv=fitrv,$ ;fitsb2=fitsb2
           rossiter=rossiter, fitdt=fitdt,$ 
           circular=circular, tides=tides, $
           alloworbitcrossing=alloworbitcrossing,$
@@ -1368,7 +1393,7 @@ ss = mkss(priorfile=priorfile, $
           debug=debug, verbose=verbose, delay=delay, $
           ;; internal inputs
           chi2func=chi2func, $
-          logname=logname)
+          logname=logname,fitgaia=fitgaia)
 
 if (size(ss))[2] ne 8 then begin
    badstart=1
@@ -1454,7 +1479,7 @@ if nthreads gt 1 then begin
       ;; create the stellar stucture within each thread
       thread_array[i].obridge->execute,$
          'ss = mkss(priorfile=priorfile, prefix=prefix,'+$
-         'rvpath=rvpath, tranpath=tranpath,'+$
+         'rvpath=rvpath, tranpath=tranpath,'+$ ;sb2path=sb2path
          'astrompath=astrompath, dtpath=dtpath,'+$
          'fluxfile=fluxfile, mistsedfile=mistsedfile,'+$
          'sedfile=sedfile,specphotpath=specphotpath,'+$
@@ -1471,7 +1496,7 @@ if nthreads gt 1 then begin
          'nstars=nstars,starndx=starndx,'+ $         
          'diluted=diluted, fitdilute=fitdilute,'+$
          'nplanets=nplanets,'+$
-         'fittran=fittran, fitrv=fitrv,'+$
+         'fittran=fittran, fitrv=fitrv,'+$ ; fitsb2=fitsb2
          'rossiter=rossiter,fitdt=fitdt,'+$
          'circular=circular,tides=tides,'+$
          'alloworbitcrossing=alloworbitcrossing,'+$
@@ -1491,7 +1516,7 @@ if nthreads gt 1 then begin
          'debug=debug, verbose=verbose,delay=delay,'+$
          '/silent,'+$
          'chi2func=chi2func,'+$
-         'logname=logname)'
+         'logname=logname, fitgaia=fitgaia)'
    endfor
 endif
 
@@ -1678,10 +1703,11 @@ ss.verbose = keyword_set(verbose)
 ;; make a new stellar system structure with only fitted and derived
 ;; parameters, populated by the pars array
 ;mcmcss = mcmc2str(pars, ss)
+
 mcmcss = mkss(priorfile=priorfile, $
               prefix=prefix,$
               ;; data file inputs
-              rvpath=rvpath, tranpath=tranpath, $
+              rvpath=rvpath, tranpath=tranpath, $ ;sb2path=sb2path
               astrompath=astrompath, dtpath=dtpath, $
               ;; SED model inputs
               fluxfile=fluxfile, mistsedfile=mistsedfile, $
@@ -1703,7 +1729,7 @@ mcmcss = mkss(priorfile=priorfile, $
               diluted=diluted, fitdilute=fitdilute, $
               ;; planet inputs
               nplanets=nplanets, $
-              fittran=fittran,fitrv=fitrv,$
+              fittran=fittran,fitrv=fitrv,$ ;fitsb2=fitsb2
               rossiter=rossiter, fitdt=fitdt,$ 
               circular=circular, tides=tides, $
               alloworbitcrossing=alloworbitcrossing,$
@@ -1731,7 +1757,7 @@ mcmcss = mkss(priorfile=priorfile, $
               /silent, $
               chi2func=chi2func, $
               logname=logname, $
-              best=best)
+              best=best,fitgaia=fitgaia)
 
 if (size(mcmcss))[2] ne 8 then return
 
