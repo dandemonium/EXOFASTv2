@@ -12,8 +12,8 @@ ticid = fileparts[2]
 data = mrdfits(fitsname,1)
 time = data.time + 2457000d0 ;; BJD_TDB?
 
-flux = data.pdcsap_flux
-fluxerr = data.pdcsap_flux_err
+flux = data.flux;pdcsap_flux
+fluxerr = data.flux_err;pdcsap_flux_err
 
 ;; find the momentum dumps to introduce a break in the spline fit
 ;; (where quality bit 6 is set)
@@ -54,6 +54,7 @@ endif else begin
    phase = dblarr(nplanets,n_elements(time))
    use = []
    intransit = []
+   duration = t14 ; DJS EDIT
    for k=0L, nplanets-1 do begin
       phase[k,*] = (time-tc[k]) mod period[k]
       toohigh = where(phase[k,*] gt period[k]/2d0)

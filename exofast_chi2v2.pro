@@ -915,6 +915,69 @@ for j=0, ss.nplanets-1 do begin
    endif
 endfor
 
+
+;; fit the SED with MIST BC tables
+;if file_test(ss.star.mistsedfile) or file_test(ss.star.fluxfile) then begin
+;   if keyword_set(psname) then epsname = psname+'.sed.eps'
+
+;   sedchi2 = 0d0
+
+   ;; the SED can constrain Teff too precisely
+   ;; (they ignore systematics in interferimetric radii on which they're based). 
+   ;; Add a floor for the Teff used everywhere else
+;   if ss.star.teffsed.fit then begin
+;      teffsed = ss.star.teffsed.value
+;      sedchi2 += ((ss.star.teff.value - ss.star.teffsed.value)/(ss.teffsedfloor*ss.star.teffsed.value))^2
+;   endif else teffsed = ss.star.teff.value
+
+;   if ss.star.fehsed.fit then begin
+;      fehsed = ss.star.fehsed.value
+;      sedchi2 += ((ss.star.feh.value - ss.star.fehsed.value)/ss.fehsedfloor)^2
+;   endif else fehsed = ss.star.feh.value
+
+   ;; the SED can constrain FBol too precisely
+   ;; Add a floor for the Fbol used everywhere else
+;   if ss.star.rstarsed.fit then begin
+;      rstarsed = ss.star.rstarsed.value
+;      lstarsed = 4d0*!dpi*rstarsed^2*ss.star.teff.value^4*ss.constants.sigmab/ss.constants.lsun*ss.constants.rsun^2 ;; lsun
+;      lstarsed = 4d0*!dpi*rstarsed^2*teffsed^4*ss.constants.sigmab/ss.constants.lsun*ss.constants.rsun^2 ;; lsun
+;      sedchi2 += ((lstarsed - ss.star.lstar.value)/(ss.fbolsedfloor*lstarsed))^2
+;   endif else begin
+;      rstarsed = ss.star.rstar.value
+;      lstarsed = 4d0*!dpi*rstarsed^2*ss.star.teff.value^4*ss.constants.sigmab/ss.constants.lsun*ss.constants.rsun^2 ;; lsun
+;      lstarsed = 4d0*!dpi*rstarsed^2*teffsed^4*ss.constants.sigmab/ss.constants.lsun*ss.constants.rsun^2 ;; lsun
+;   endelse
+
+ ;  if file_test(ss.star.mistsedfile) then begin
+      ;; MIST BC SED
+;      sedchi2 += mistsed(teffsed, ss.star.logg.value,fehsed, ss.star.av.value, ss.star.distance.value, lstarsed, ss.star.errscale.value, ss.star.mistsedfile, debug=ss.debug, psname=epsname)
+;   endif else begin
+      ;; Keivan Stassun's SED
+ ;     junk = exofast_sed(ss.star.fluxfile, teffsed, $
+;                         rstarsed,$
+;                         ss.star.av.value, ss.star.distance.value, $
+;                         logg=ss.star.logg.value,met=fehsed,$
+;                         alpha=ss.star.alpha.value,verbose=ss.verbose, $
+;                         f0=f, fp0=fp, ep0=ep, psname=epsname, $
+;                         pc=ss.constants.pc, rsun=ss.constants.rsun, $
+;                         logname=logname, debug=ss.debug, oned=ss.oned, fitgaia=fitgaia)
+;      if ~finite(junk) then begin
+;         if ss.debug or ss.verbose then printandlog, 'sed is bad', ss.logname
+;         return, !values.d_infinity
+;      endif
+;      sedchi2 += exofast_like(f-fp,0d0,ss.star.errscale.value*ep,/chi2)
+;   endelse
+   
+   ;; do some error checking
+;   if ~finite(sedchi2) then begin
+;      if ss.debug or ss.verbose then printandlog, 'sed is bad', ss.logname
+;      return, !values.d_infinity
+;   endif
+;   chi2 += sedchi2
+;   if ss.verbose then printandlog, 'SED penalty = ' + strtrim(sedchi2,2), ss.logname
+
+;endif
+
 ;; RV model (non-interacting planets)
 for j=0, ss.ntel-1 do begin
 
@@ -1029,10 +1092,73 @@ if (where(ss.planet.fitrv))[0] ne -1 then begin
    endif
 endif
 
+;; SB2!
+for j=0, ss.ntel2-1 do begin
+
+   rv = *(ss.telescope2[j].sb2ptrs)
+
+   if (where(rv.err^2 + ss.telescope2[j].jittervar.value le 0d0))[0] ne -1 then return, !values.d_infinity
+
+   modelrv = dblarr(n_elements(rv.rv))
+   for i=0, ss.nplanets-1 do begin
+
+      if ss.planet[i].fitsb2 then begin      
+         ;; rvbjd = rv.bjd ;; usually sufficient (See Eastman et al., 2013)
+
+         ;; time in target barycentric frame (expensive) -- might need w swap
+         rvbjd = bjd2target(rv.bjd, inclination=ss.planet[i].i.value, $
+                            a=ss.planet[i].a.value, tp=ss.planet[i].tp.value, $
+                            period=ss.planet[i].period.value, e=ss.planet[i].e.value,$
+                            omega=ss.planet[i].omega.value,/primary,$
+                            c=ss.constants.c/ss.constants.au*ss.constants.day)
+         
+         ;; calculate the SB2 model
+    ;     if ss.planet[i].rossiter then $
+     ;       u1 = linld(ss.star.logg.value,ss.star.teff.value,ss.star.feh.value,'V') $
+    ;     else u1 = 0d0
+         modelsb2 += exofast_rv(rvbjd,ss.planet[i].tp.value,ss.planet[i].period.value,$
+                               0d0,ss.planet[i].K2.value,$
+                               ss.planet[i].e.value,ss.planet[i].omega.value+!dpi,$
+                               slope=0d0, $
+                               rossiter=ss.planet[i].rossiter, i=ss.planet[i].i.value,a=ss.planet[i].ar.value,$
+                               p=abs(ss.planet[i].p.value),vsini=ss.star.vsini.value,$
+                               lambda=ss.planet[i].lambda.value,$
+                               u1=u1,deltarv=deltarv)
+
+      endif
+
+   endfor
+   ;; add instrumental offset, slope, and quadratic term
+   modelsb2 += ss.telescope[j].gamma.value; + ss.star.slope.value*(rv.bjd-t0) + ss.star.quad.value*(rv.bjd-t0)^2
+
+   (*ss.telescope[j].sb2ptrs).residuals = rv.rv - modelsb2
+   
+   if keyword_set(psname) then begin
+      base = file_dirname(psname) + path_sep() + file_basename(psname,'.model')
+      exofast_forprint, rv.bjd, rv.rv - modelsb2, rv.err, format='(f0.8,x,f0.6,x,f0.6)', textout=base + '.residuals.sb2.telescope_' + strtrim(j,2) + '.txt', /nocomment,/silent
+      exofast_forprint, rv.bjd, modelsb2, format='(f0.8,x,f0.6)', textout=base + '.model.sb2.telescope_' + strtrim(j,2) + '.txt', /nocomment,/silent
+   endif
+
+   sb2chi2 = exofast_like((*ss.telescope[j].sb2ptrs).residuals,ss.telescope[j].jittervar.value,rv.err,/chi2)
+   if ~finite(sb2chi2) then stop
+   chi2 +=sb2chi2
+   if ss.verbose then printandlog, ss.telescope[j].label + ' RV penalty = ' + strtrim(sb2chi2,2),ss.logname
+endfor
+
+;; if at least one RV planet is fit, plot it
+;if (where(ss.planet.fitrv))[0] ne -1 then begin
+;   if keyword_set(psname) then begin
+;      plotrv, ss, psname=psname + '.rv.ps',range=ss.rvrange
+;   endif else if ss.debug then begin
+;      plotrv, ss, range=ss.rvrange
+;   endif
+;endif
+
+
+
 ;; Doppler Tomography Model
 for i=0, ss.ndt-1 do begin
    if keyword_set(psname) then epsname = psname + '.dt_' + string(i,format='(i02)') + '.eps'
-
    planetndx = (*(ss.doptom[i].dtptrs)).planetndx
    starndx = ss.planet[planetndx].starndx
    dtchi2 = dopptom_chi2(*(ss.doptom[i].dtptrs),$
@@ -1169,7 +1295,10 @@ for j=0L, ss.ntran-1 do begin
                                     thermal=band.thermal.value, $
                                     reflect=band.reflect.value, $
                                     phaseshift=band.phaseshift.value, $
-                                    beam=ss.planet[i].beam.value,$
+                                    ellipsoidal=band.ellipsoidal.value, $
+                                    beam=band.beam.value, $
+;                                    beam=ss.planet[i].beam.value,$
+;                                    dilute=band.dilute.value,$
                                     dilute=ss.transit[j].dilute.value,$
                                     tc=ss.planet[i].tc.value,$
                                     rstar=ss.star[ss.planet[i].starndx].rstar.value/AU,$

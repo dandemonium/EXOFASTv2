@@ -23,10 +23,10 @@ for i=1L, 13631L do begin
    outname = string(round(double(teff)/100.0), double(logg), double(meta), format='("lte",i2,"-",f3.1,"-",f3.1,".NextGen.spec")')
 
    openw, lun, outname, /get_lun
-   printf, lun, teff, logg, meta, alpha 'Teff, logg, [M/H], alpha'
+   printf, lun, teff, logg, meta, alpha, 'Teff, logg, [M/H], alpha'
    printf, lun, npoints, 'number of wavelength points'
    printf, lun, wavelength
-   printf, flux
+   printf, lun, flux
    free_lun, lun
 
    stop

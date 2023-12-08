@@ -250,8 +250,8 @@ endif
    ;; Faigler & Mazeh, 2011
    ;; this assumes alpha_beam = 1d0, when in reality it is between 0.8
    ;; and 1.2
-   if ss.planet[i].beam.derive and ~ss.planet[i].beam.fit then $
-      ss.planet[i].beam.value = 4d0*ss.planet[i].k.value/(ss.constants.c/ss.constants.meter) ;; eq 1
+ ;  if ss.planet[i].beam.derive and ~ss.planet[i].beam.fit then $
+ ;     ss.planet[i].beam.value = 4d0*ss.planet[i].k.value/(ss.constants.c/ss.constants.meter) ;; eq 1
 ;   if ss.planet[i].ellipsoidal.derive then $
 ;      ss.planet[i].ellipsoidal.value = ss.planet[i].mpsun.value/ss.star[ss.planet[i].starndx].mstar.value*sin(ss.planet[i].i.value)/ss.planet.ar.value^3*sin(ss.planet[i].i.value) ;; eq 2
 

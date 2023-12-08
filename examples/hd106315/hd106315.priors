@@ -21,4 +21,6 @@ av 0.005 -1 0 0.05394 # max E(B-V)*3.1 = max A_V
 # prior on parallax from Gaia DR1
 # https://gea.esac.esa.int/archive/
 parallax 9.321065784688436 0.3417318136481927
-
+#### Dan's addition ####
+logk2_1 0 0
+logk2_0 0 0

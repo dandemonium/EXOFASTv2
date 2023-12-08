@@ -52,7 +52,6 @@ if n_elements(flux) eq 0 or keyword_set(redo) then begin
 
          fileparts = strsplit(specfiles[i],'.',/extract)
          labels[i] = fileparts[1]
-         
          ;; the filename can encode the blending
          if n_elements(fileparts) ge 3 then begin
             blendtxt = fileparts[2]
@@ -410,7 +409,7 @@ if keyword_set(debug) or keyword_set(psname) eq 1 then begin
       
    endif
    set_plot, mydevice
-   
+   cgPS2PDF,psname
 end
 
 return, sedchi2

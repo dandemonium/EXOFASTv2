@@ -15,6 +15,9 @@ if n_elements(lambdarange) eq 0 then lambdarange=0
 model = ccf2d * 0.0 + median(ccf2d)
 resid = ccf2d - model
 
+;telescope = (strsplit(filename,'.',/extract))(1)
+;rspec = (strsplit(filename,'.',/extract))(2)
+;night = strmid(filename,1,4)+'-'+strmid(filename,5,2)+'-'+strmid(filename,7,2)
 telescope = (strsplit(basename,'.',/extract))(2)
 rspec = (strsplit(basename,'.',/extract))(3)
 if rspec eq 0d0 then message, 'ERROR: the DT filename does not properly encode the instrument resolution. See documentation for DTPATH in exofastv2.pro for details.'
