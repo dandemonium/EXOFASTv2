@@ -112,7 +112,8 @@ for i=0, nfit-1 do begin
                       " is unconstrained. Check your starting conditions", logname
                chi2 = bestchi2 + 1 
                mcmcscale[i,j] = !values.d_nan
-               stop
+               print, "DJS disabled the stop; re-enable if not deriving thermal emission for HD 74925'"
+			   ;stop ;;; DJS EDIT to get it to stop stopping for HD 74925
                goto, next
             endif            
 ;            if ~finite(bestpars[tofit[i]] + mcmcscale[i,j]) then begin

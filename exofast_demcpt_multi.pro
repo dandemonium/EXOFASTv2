@@ -803,5 +803,3 @@ format = '("EXOFAST_DEMC: done in ",a,a,"; accepted ",a,"% of trial steps")'
 printandlog, string(runtime, units, acceptancerate, format=format), logname
 
 end
-
-    
