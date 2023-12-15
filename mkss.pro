@@ -93,7 +93,7 @@ function mkss, priorfile=priorfile, $
                silent=silent, $
                chi2func=chi2func, $
                logname=logname, $
-               best=best, fitgaia=fitgaia
+               best=best, derivethermal=derivethermal
 
 
 if n_elements(transitrange) eq 0 then transitrange=dblarr(6)+!values.d_nan
@@ -2494,7 +2494,8 @@ ss = create_struct('star',replicate(star,nstars>1),$
                    'transitrange',transitrange,$
                    'rvrange',rvrange,$
                    'sedrange',sedrange,$
-                   'emrange',emrange)
+                   'emrange',emrange,$
+                   'derivethermal',derivethermal)
 
 ;)
 
@@ -2513,11 +2514,17 @@ if file_test(mistsedfile) or file_test(sedfile) or file_test(fluxfile) then begi
       ss.mistsedfile = mistsedfile
       ss.ndata += n_elements(mags) +2d0 ;; two more because of links between rstar and rstarsed, teff and teffsed
    endif else if file_test(sedfile) then begin
-      sedchi2 = exofast_multised(replicate(6000d0,nstars), replicate(4.41d0,nstars), replicate(0d0,nstars), $
+      sedarr = exofast_multised(replicate(6000d0,nstars), replicate(4.41d0,nstars), replicate(0d0,nstars), $
                                  replicate(0d0,nstars), replicate(10d0,nstars), replicate(1d0,nstars), $
                                  replicate(1d0,nstars), sedfile, /redo, specphotpath=specphotpath,$
                                  blend0=blend,rstar=replicate(1d0,nstars),$
-                                 sperrscale=ss.specphot.sperrscale.value[0],spzeropoint=ss.specphot.spzeropoint.value[0])
+                                 sperrscale=ss.specphot.sperrscale.value[0],spzeropoint=ss.specphot.spzeropoint.value[0], derivethermal=derivethermal))
+                                 blend0=blend,rstar=replicate(1d0,nstars),sperrscale=ss.specphot.sperrscale.value
+      sedchi2 = sedarr[0]
+      if keyword_set(derivethermal) then begin
+         thermndx = where(ss.band[ss.transit[*].bandndx].label eq 'TESS')
+         ss.band[ss.transit[thermndx].bandndx].thermal.value = sedarr[1]
+      endif
       ss.sedfile = sedfile
       readcol, sedfile, junk, format='a', comment='#', /silent
       ndata += n_elements(junk) + 2 ;; two more because of links between rstar and rstarsed, teff and teffsed
@@ -2812,9 +2819,12 @@ for i=0, nband-1 do begin
    match = where(fitthermal eq ss.band[i].name)
    if match[0] ne -1 then begin
       ss.band[i].thermal.fit = 1B
-      ss.band[i].thermal.derive = 1B
+	  ss.band[i].thermal.derive = 1B
       ss.band[i].eclipsedepth.derive = 1B
       if ~keyword_set(silent) then printandlog, "Fitting thermal emission for " + ss.band[i].name + " band",logname
+      if (~keyword_set(silent) and keyword_set(derivethermal)) then printandlog, "Actually, deriving thermal emission from SEDs for " + ss.band[i].name + " band; " + $
+	  "(see chi2v2.pro and getmcmcscale.pro for modifications to undo otherwise.",logname
+
    endif
 
    match = where(fitreflect eq ss.band[i].name)
@@ -3528,7 +3538,6 @@ ss.ndata += 3*total(ss.mist)
 ss.ndata += 3*total(ss.yy)
 ss.ndata += 3*total(ss.parsec)
 ss.ndata += 2*total(ss.torres)
-
 
 return, ss
 

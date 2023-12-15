@@ -1213,7 +1213,7 @@ pro exofastv2, priorfile=priorfile, $
                mksummarypg=mksummarypg,$
                nocovar=nocovar, $
                plotonly=plotonly, bestonly=bestonly, $
-               badstart=badstart,fitgaia=fitgaia
+               badstart=badstart,derivethermal=derivethermal
                
 ;; this is the stellar system structure
 COMMON chi2_block, ss
@@ -1358,7 +1358,7 @@ if nplanets ne 0 and keyword_set(refinestar) then begin
              starndx=starndx,priorfile=priorfile, $
              teffemfloor=teffemfloor, fehemfloor=fehemfloor, rstaremfloor=rstaremfloor,ageemfloor=ageemfloor,$
              yy=yy, torres=torres, nomist=nomist, parsec=parsec, mann=mann, logname=logname, debug=stardebug, verbose=verbose, $
-             mkgif=mkgif,chi2func=chi2func,fitgaia=fitgaia,prefix=prefix)
+             mkgif=mkgif,chi2func=chi2func,prefix=prefix,derivethermal=derivethermal)
    if (size(ss))[2] ne 8 then return
 
    pars = str2pars(ss,scale=scale,name=starparnames, angular=angular)
@@ -1422,7 +1422,7 @@ ss = mkss(priorfile=priorfile, $
           debug=debug, verbose=verbose, delay=delay, $
           ;; internal inputs
           chi2func=chi2func, $
-          logname=logname,fitgaia=fitgaia)
+          logname=logname,derivethermal=derivethermal)
 
 if (size(ss))[2] ne 8 then begin
    badstart=1
@@ -1545,7 +1545,7 @@ if nthreads gt 1 then begin
          'debug=debug, verbose=verbose,delay=delay,'+$
          '/silent,'+$
          'chi2func=chi2func,'+$
-         'logname=logname, fitgaia=fitgaia)'
+         'logname=logname, derivethermal=derivethermal)'
    endfor
 endif
 
@@ -1904,7 +1904,7 @@ mcmcss = mkss(priorfile=priorfile, $
               /silent, $
               chi2func=chi2func, $
               logname=logname, $
-              best=best,fitgaia=fitgaia)
+              best=best,derivethermal=derivethermal)
 
 if (size(mcmcss))[2] ne 8 then return
 

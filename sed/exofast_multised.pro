@@ -1,5 +1,5 @@
 ;; The SED constrains Teff, logg, [Fe/H], Extinction, and (Rstar/Distance)^2
-function exofast_multised,teff, logg, feh, av, distance, lstar, errscale, sedfile, alpha=alpha, debug=debug, psname=psname, range=range, specphotpath=specphotpath, logname=logname,redo=redo,blend0=blend0,rstar=rstar, sperrscale=sperrscale,spzeropoint=spzeropoint, verbose=verbose
+function exofast_multised,teff, logg, feh, av, distance, lstar, errscale, sedfile, alpha=alpha, debug=debug, psname=psname, range=range, specphotpath=specphotpath, logname=logname,redo=redo,blend0=blend0,rstar=rstar, sperrscale=sperrscale,spzeropoint=spzeropoint, verbose=verbose, derivethermal=derivethermal
 
 
 nstars = n_elements(teff)
@@ -30,12 +30,9 @@ if n_elements(flux) eq 0 or keyword_set(redo) then begin
    ;; read in the SED bands
    readsedfile, sedfile, nstars, sedbands=sedbands, mag=mag,errmag=errmag,blend=blend,$
                 filter_curves=filter_curves, weff=weff, widtheff=widtheff, zero_point=zero_point, $
-                flux=flux, errflux=errflux, filter_curve_sum=filter_curve_sum, logname=logname
-
-   blend0 = blend
-
+                flux=flux, errflux=errflux, filter_curve_sum=filter_curve_sum
+   blend0 = blend 
    nbands=n_elements(weff)
-   
    readcol,filepath('extinction_law.ascii',root_dir=getenv('EXOFAST_PATH'),subdir='sed'),klam,kkap,/silent
    kapv = interpol(kkap,klam,0.55)
    kapp1 = interpol(kkap,klam,wavelength)
@@ -94,7 +91,7 @@ for j=0L, nstars-1 do begin
    endelse
 
    ;; interpolation failed, skip
-   if ~finite(lamflam1temp[0]) then return, !values.d_infinity
+   if ~finite(lamflam1temp[0]) then return, [!values.d_infinity, !values.d_infinity] ; edited by DJS
 
    ;; convert to observed flux -- interpolation breaks flux=sigma*T^4, renormalize
    constants = mkconstants()
@@ -146,7 +143,20 @@ for j=0L, nstars-1 do begin
    endfor
 endfor
 
-;stop
+;;; ADDED BY DJS -- see calls to exofast_multised.pro in mkss.pro and exofast_chi2v2.pro
+if keyword_set(derivethermal) then begin ; assume 0,1 correspond to EB   hoststar_ndx = 0
+   hoststar_ndx = 0
+   eclipsing_ndx = 1
+   tessmatch = where(sedbands eq 'TESS_TESS.Red',complement=not_tess)
+   secflux = total(sed[eclipsing_ndx,*]*filter_curves[tessmatch,*])/filter_curve_sum[tessmatch]
+   priflux = total(sed[hoststar_ndx,*]*filter_curves[tessmatch,*])/filter_curve_sum[tessmatch]
+   thermal = 1d6*secflux/(priflux+secflux)
+ ;  tesserr = errflux[tessmatch] ; store for later
+ ;  if finite(errflux[tessmatch]) then errflux[tessmatch] = !values.d_infinity ; don't penalize the SED
+endif else begin
+   thermal = -1*!values.d_infinity;stop
+  ; not_tess = indgen(nbands)
+endelse
 
 sedchi2=0d0
 
@@ -182,7 +192,8 @@ for i=0L, nspecfiles-1 do begin
    ;print, i, specphotchi2, spzeropoint[i], sperrscale[i], sedchi2, exofast_like(flux[absolute]-modelfluxpos[absolute],0d0,errflux[absolute]*errscale,/chi2)
 endfor
 
-;debug=1
+;if keyword_set(derivethermal) then errflux[tessmatch] = tesserr
+
 if keyword_set(debug) or keyword_set(psname) eq 1 then begin
 
    ;; The Spectral Energy Distribution (black), with broad band
@@ -270,6 +281,7 @@ if keyword_set(debug) or keyword_set(psname) eq 1 then begin
       legendcolors = colors[(lindgen(nstars)+1) mod ncolors]
       
       for i=0L, nbands-1L do begin 
+         ;if (i eq tessmatch) then continue ; don't plot the TESS band
          ;; if the observed band is some combination of more than one but not all stars
          if total(abs(blend[i,*])) gt 1 and total(blend[i,*]) ne nstars then begin
             starstr = strjoin(starnames[where(blend[i,*] eq 1)],'+')
@@ -343,7 +355,7 @@ if keyword_set(debug) or keyword_set(psname) eq 1 then begin
    res_errlo = dblarr(nbands)
    
    for i=0, nbands-1 do begin
-
+      ;if (i eq tessmatch) then continue ; don't plot the TESS band
       ;; plot model bands (blue filled circles)
       relative = where(blend[i,*] eq -1)
       if relative[0] eq -1 then begin
@@ -436,6 +448,7 @@ if keyword_set(debug) or keyword_set(psname) eq 1 then begin
    endfor
 
    for i=0L, nbands-1 do begin
+      ;if (i eq tessmatch) then continue ; don't plot the TESS band
       plotsym, 0, symsize, /fill, color=pointcolors[i]
       ;; plot the data points
       oplot, [weff[i]], [residuals[i]], psym=8;, color=pointcolors[i]
@@ -479,8 +492,10 @@ if keyword_set(debug) or keyword_set(psname) eq 1 then begin
       residualfilename = file_dirname(psname) + path_sep() + 'modelfiles' + path_sep() + file_basename(psname,'.eps') + '.residuals.txt'
       
       startxt = strarr(nbands)
-      for i=0L, nbands-1 do startxt[i] = strjoin(strtrim(where(blend[i,*]),2),',')
-      
+      for i=0L, nbands-1 do begin
+         ;if (i eq tessmatch) then continue ; don't plot the TESS band
+         startxt[i] = strjoin(strtrim(where(blend[i,*]),2),',')
+      endfor    
 ;      exofast_forprint, sedbands, weff, widtheff, sed, errflux, flux, flux-flux,startxt, textout=residualfilename, $
 ;                        comment='# Filtername, Center wavelength (um), half bandpass (um), flux, error, flux, residuals (erg/s/cm^2), star indices', $
 ;                        format='(a20,x,f0.6,x,f0.6,x,e0.6,x,e0.6,x,e0.6,x,e0.6,x,a)'
@@ -489,8 +504,8 @@ if keyword_set(debug) or keyword_set(psname) eq 1 then begin
    set_plot, mydevice
    cgPS2PDF,psname
 end
-
-return, sedchi2
+sedarr = [sedchi2, thermal]
+return, sedarr
 
 end
 

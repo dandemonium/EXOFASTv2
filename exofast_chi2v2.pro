@@ -925,7 +925,7 @@ if file_test(ss.mistsedfile) or file_test(ss.fluxfile) or file_test(ss.sedfile) 
                               atmospheres=atmospheres, wavelength=wavelength,$
                               range=ss.sedrange)
    endif else if file_test(ss.sedfile) then begin
-      sedchi2 += exofast_multised(teffsed, ss.star.logg.value,fehsed, $
+      sedarr = exofast_multised(teffsed, ss.star.logg.value,fehsed, $
                                   ss.star.av.value, $
                                   ss.star.distance.value, lstarsed, $
                                   ss.star[0].errscale.value, $
@@ -933,7 +933,18 @@ if file_test(ss.mistsedfile) or file_test(ss.fluxfile) or file_test(ss.sedfile) 
                                   debug=ss.debug, psname=epsname,$
                                   range=ss.sedrange,specphotpath=ss.specphotpath, $
                                   sperrscale=ss.specphot.sperrscale.value,$
-                                  spzeropoint=ss.specphot.spzeropoint.value)
+                                  spzeropoint=ss.specphot.spzeropoint.value, derivethermal=ss.derivethermal))
+
+      sedchi2 += sedarr[0]
+      
+      if keyword_set(ss.derivethermal) then begin
+         if finite(sedarr[1]) then begin
+            thermndx = where(ss.band[ss.transit[*].bandndx].label eq 'TESS')
+            ss.band[ss.transit[thermndx].bandndx].thermal.value = sedarr[1]
+			;print,sedarr[1],ss.band[ss.transit[thermndx].bandndx].thermal.value
+	        ;stop
+         endif
+      endif
    endif else begin
       ;; Keivan Stassun's SED
       junk = exofast_sed(ss.star.fluxfile, teffsed, $
@@ -1588,7 +1599,7 @@ for i=0L, ss.nplanets-1L do begin
          LOADCT, 39,/silent
          colors = [0,254,159,95,223,31,207,111,191,47]
          charsizelegend = 0.09
-         xlegend = 0.1
+      f   xlegend = 0.1
          ylegend = 0.90
          charsize = 0.5
       endif else begin
@@ -1856,6 +1867,11 @@ if ~finite(chi2) then begin
    stop
 endif
 
+;;; added by DJS 2023-12-15 to (try to) push derived thermal value into pars array for DEMCMC 
+if keyword_set(ss.derivethermal) then begin
+   pars = str2pars(ss,scale=scale,name=name,angular=angular,ndx=ndx)
+   ;printandlog, string("at end of chi2v2.pro, ss.band.thermal.value= and pars[26]=",ss.band[*].thermal.value,pars[26]),ss.logname
+endif
 return, chi2
 
 end
