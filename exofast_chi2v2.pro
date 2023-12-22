@@ -1767,10 +1767,10 @@ if ~finite(chi2) then begin
 endif
 
 ;;; added by DJS 2023-12-15 to (try to) push derived thermal value into pars array for DEMCMC 
-if keyword_set(ss.derivethermal) then begin
-   pars = str2pars(ss,scale=scale,name=name,angular=angular,ndx=ndx)
+;if keyword_set(ss.derivethermal) then begin
+;   pars = str2pars(ss,scale=scale,name=name,angular=angular,ndx=ndx)
    ;printandlog, string("at end of chi2v2.pro, ss.band.thermal.value= and pars[26]=",ss.band[*].thermal.value,pars[26]),ss.logname
-endif
+;endif
 return, chi2
 
 end

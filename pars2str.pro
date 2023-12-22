@@ -26,6 +26,8 @@ pro pars2str, pars, str, best=best
   if (size(pars))[0] eq 1 then begin
      ;; populate the structure with the parameter array
      for i=0, npars-1 do begin
+	 ;;; DJS hack
+;     if i eq 26 then continue ;;; DJS hack
         if tofit[3,i] eq -1 then begin
            if not str.(tofit[0,i])[tofit[1,i]].(tofit[2,i]).fit then message, errmsg
            if keyword_set(best) then str.(tofit[0,i])[tofit[1,i]].(tofit[2,i]).best = pars[i] $
@@ -38,6 +40,8 @@ pro pars2str, pars, str, best=best
      endfor
   endif else begin
      for i=0, npars-1 do begin
+	 ;;; DJS hack
+;     if i eq 26 then continue ;;; DJS hack
         if tofit[3,i] eq -1 then begin
            if not str.(tofit[0,i])[tofit[1,i]].(tofit[2,i]).fit then message, errmsg
            if keyword_set(best) then str.(tofit[0,i])[tofit[1,i]].(tofit[2,i]).best = transpose(pars[i,*]) $
