@@ -465,11 +465,33 @@ endelse
 
 endfor
 
+if keyword_set(ss.derivethermal) then begin ;; ADDED BY DJS to see if this is reasonably quick...
+;stop
+   for i=0, n_elements(ss.star[0].teffsed.value)-1 do begin
+      fehsed = ss.star.feh.value[i]
+      teffsed = ss.star.teffsed.value[i]
+      lstarsed = 4d0*!dpi*ss.star.rstarsed.value[i]^2*teffsed^4*ss.constants.sigmab/ss.constants.lsun*ss.constants.rsun^2 ;; lsun
+
+      sedarr = exofast_multised(teffsed, ss.star.logg.value[i],fehsed, $
+                                  ss.star.av.value[i], $
+                                  ss.star.distance.value[i], lstarsed, $
+                                  ss.star.errscale.value[i], $
+                                  ss.sedfile, rstar=ss.star.rstarsed.value[i],$
+                                  debug=ss.debug, psname=epsname,$
+                                  range=ss.sedrange,specphotpath=ss.specphotpath, $
+                                  sperrscale=ss.specphot.sperrscale.value, derivethermal=ss.derivethermal)
+      if finite(sedarr[1]) then begin
+         thermndx = where(ss.band[ss.transit[*].bandndx].label eq 'TESS')
+         ss.band[ss.transit[thermndx].bandndx].thermal.value[i] = sedarr[1]
+      endif
+   endfor
+endif
+
 for i=0L, ss.nband-1 do begin  
    massfraction = ss.planet[0].mpsun.value/(ss.star[ss.planet[0].starndx].mstar.value + ss.planet[0].mpsun.value)
 ;   fluxfraction = ss.band[i].dilute.value
 ;   ss.band[i].phottobary.value = 1d0/(massfraction-fluxfraction)
    ss.band[i].eclipsedepth.value = ss.band[i].thermal.value + ss.band[i].reflect.value
 endfor
-
+      
 end

@@ -299,6 +299,7 @@ if n_elements(starndx) ne nplanets and nplanets gt 0 then begin
 endif
 
 if not keyword_set(longcadence) then longcadence=0B
+if not keyword_set(derivethermal) then derivethermal=0B
 if n_elements(fitthermal) eq 0 then fitthermal = ['']
 if n_elements(fitreflect) eq 0 then fitreflect = ['']
 if n_elements(fitphase) eq 0 then fitphase = ['']
@@ -2822,9 +2823,12 @@ for i=0, nband-1 do begin
 	  ss.band[i].thermal.derive = 1B
       ss.band[i].eclipsedepth.derive = 1B
       if ~keyword_set(silent) then printandlog, "Fitting thermal emission for " + ss.band[i].name + " band",logname
-      if (~keyword_set(silent) and keyword_set(derivethermal)) then printandlog, "Actually, deriving thermal emission from SEDs for " + ss.band[i].name + " band; " + $
-	  "(see chi2v2.pro and getmcmcscale.pro for modifications to undo otherwise.",logname
-
+	  if keyword_set(derivethermal) then begin
+         thermndx = where(ss.band[i].thermal.label eq 'TESS')
+	     ss.band[thermndx].thermal.fit = 0B
+         if ~keyword_set(silent) then printandlog, "Actually, deriving thermal emission from SEDs for " + ss.band[i].name + " band; " + $
+		    "(see chi2v2.pro, multised.pro, derivepars.pro, and getmcmcscale.pro for modifications to undo otherwise).",logname
+      endif
    endif
 
    match = where(fitreflect eq ss.band[i].name)
