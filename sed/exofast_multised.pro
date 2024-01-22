@@ -119,7 +119,7 @@ if keyword_set(derivethermal) then begin ; assume 0,1 correspond to EB   hoststa
    tessmatch = where(sedbands eq 'TESS_TESS.Red',complement=not_tess)
    secflux = total(sed[eclipsing_ndx,*]*filter_curves[tessmatch,*])/filter_curve_sum[tessmatch]
    priflux = total(sed[hoststar_ndx,*]*filter_curves[tessmatch,*])/filter_curve_sum[tessmatch]
-   thermal = 1d6*secflux/(priflux+secflux)
+   thermal = 1d6*secflux/(priflux+secflux);(priflux+secflux)
  ;  tesserr = errflux[tessmatch] ; store for later
  ;  if finite(errflux[tessmatch]) then errflux[tessmatch] = !values.d_infinity ; don't penalize the SED
 endif else begin
