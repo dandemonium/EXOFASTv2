@@ -1127,7 +1127,7 @@
 pro exofastv2, priorfile=priorfile, $
                prefix=prefix,$
                ;; data file inputs
-               rvpath=rvpath, tranpath=tranpath, $ ;sb2path=sb2path
+               rvpath=rvpath, tranpath=tranpath, $ 
                astrompath=astrompath, dtpath=dtpath, $
                ;; SED model inputs
                fluxfile=fluxfile,mistsedfile=mistsedfile,$
@@ -1149,7 +1149,7 @@ pro exofastv2, priorfile=priorfile, $
                diluted=diluted, fitdilute=fitdilute, $
                ;; planet inputs
                nplanets=nplanets, $
-               fittran=fittran, fitrv=fitrv, $ ;fitsb2=fitsb2
+               fittran=fittran, fitrv=fitrv, $ 
                rossiter=rossiter, fitdt=fitdt, $
                circular=circular, tides=tides, $ 
                alloworbitcrossing=alloworbitcrossing, $
@@ -1205,7 +1205,7 @@ if lmgr(/vm) or lmgr(/runtime) then begin
    if not file_test(argfile) then message, argfile + ', containing desired arguments to EXOFASTv2, does not exist'
    readargs, argfile, priorfile=priorfile, $
              prefix=prefix,$
-             rvpath=rvpath, tranpath=tranpath, $ ;sb2path=sb2path
+             rvpath=rvpath, tranpath=tranpath, $ 
              astrompath=astrompath, dtpath=dtpath, $
              fluxfile=fluxfile,mistsedfile=mistsedfile,$
              sedfile=sedfile,specphotpath=specphotpath,$
@@ -1221,7 +1221,7 @@ if lmgr(/vm) or lmgr(/runtime) then begin
              nstars=nstars,starndx=starndx, $
              diluted=diluted,fitdilute=fitdilute, $
              nplanets=nplanets, $
-             fittran=fittran, fitrv=fitrv, $;fitsb2=fitsb2
+             fittran=fittran, fitrv=fitrv, $
              rossiter=rossiter, fitdt=fitdt, $
              circular=circular, tides=tides, $ 
              alloworbitcrossing=alloworbitcrossing, $
@@ -1346,7 +1346,7 @@ endif
 ss = mkss(priorfile=priorfile, $
           prefix=prefix,$
           ;; data file inputs
-          rvpath=rvpath, tranpath=tranpath, $ ;sb2path=sb2path
+          rvpath=rvpath, tranpath=tranpath, $
           astrompath=astrompath, dtpath=dtpath, $
           ;; SED model inputs
           fluxfile=fluxfile, mistsedfile=mistsedfile, $
@@ -1368,7 +1368,7 @@ ss = mkss(priorfile=priorfile, $
           diluted=diluted, fitdilute=fitdilute, $
           ;; planet inputs
           nplanets=nplanets, $
-          fittran=fittran,fitrv=fitrv,$ ;fitsb2=fitsb2
+          fittran=fittran,fitrv=fitrv,$ 
           rossiter=rossiter, fitdt=fitdt,$ 
           circular=circular, tides=tides, $
           alloworbitcrossing=alloworbitcrossing,$
@@ -1706,7 +1706,7 @@ ss.verbose = keyword_set(verbose)
 mcmcss = mkss(priorfile=priorfile, $
               prefix=prefix,$
               ;; data file inputs
-              rvpath=rvpath, tranpath=tranpath, $ ;sb2path=sb2path
+              rvpath=rvpath, tranpath=tranpath, $ 
               astrompath=astrompath, dtpath=dtpath, $
               ;; SED model inputs
               fluxfile=fluxfile, mistsedfile=mistsedfile, $
@@ -1728,7 +1728,7 @@ mcmcss = mkss(priorfile=priorfile, $
               diluted=diluted, fitdilute=fitdilute, $
               ;; planet inputs
               nplanets=nplanets, $
-              fittran=fittran,fitrv=fitrv,$ ;fitsb2=fitsb2
+              fittran=fittran,fitrv=fitrv,$ 
               rossiter=rossiter, fitdt=fitdt,$ 
               circular=circular, tides=tides, $
               alloworbitcrossing=alloworbitcrossing,$
