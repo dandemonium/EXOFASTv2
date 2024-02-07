@@ -2,7 +2,7 @@
 ;; Required for virtual machine (free) use
 pro readargs, argfile, priorfile=priorfile, $
               prefix=prefix,$
-              rvpath=rvpath, tranpath=tranpath, $ ;sb2path=sb2path
+              rvpath=rvpath, tranpath=tranpath, $
               astrompath=astrompath, dtpath=dtpath, $
               fluxfile=fluxfile,mistsedfile=mistsedfile,$
               sedfile=sedfile,specphotpath=specphotpath,$
@@ -18,7 +18,7 @@ pro readargs, argfile, priorfile=priorfile, $
               nstars=nstars,starndx=starndx, $
               seddeblend=seddeblend,fitdilute=fitdilute, $
               nplanets=nplanets, $
-              fittran=fittran, fitrv=fitrv, $ ;fitsb2=fitsb2
+              fittran=fittran, fitrv=fitrv, $
               rossiter=rossiter, fitdt=fitdt, $
               circular=circular, tides=tides, $ 
               alloworbitcrossing=alloworbitcrossing, $
@@ -81,8 +81,6 @@ while not eof(lun) do begin
             rvpath = strtrim(entries[1],2)
          endif else if strupcase(strtrim(entries[0],2)) eq 'TRANPATH' then begin
             tranpath = strtrim(entries[1],2)
-         endif else if strupcase(strtrim(entries[0],2)) eq 'SB2PATH' then begin
-            sb2path = strtrim(entries[1],2)
          endif else if strupcase(strtrim(entries[0],2)) eq 'ASTROMPATH' then begin
             astrompath = strtrim(entries[1],2)
          endif else if strupcase(strtrim(entries[0],2)) eq 'DTPATH' then begin
@@ -203,8 +201,6 @@ while not eof(lun) do begin
             tides = boolean(entries[1])
          endif else if strupcase(strtrim(entries[0],2)) eq 'NPLANETS' then begin
             nplanets = long(entries[1])
-         endif else if strupcase(strtrim(entries[0],2)) eq 'FITSB2' then begin
-            fitsb2 = boolean(json_parse(entries[1],/toarray))
          endif else if strupcase(strtrim(entries[0],2)) eq 'NSTARS' then begin
             nstars = long(entries[1])
          endif else if strupcase(strtrim(entries[0],2)) eq 'STARNDX' then begin

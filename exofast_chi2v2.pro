@@ -1175,59 +1175,6 @@ if (where(ss.planet.fitrv))[0] ne -1 then begin
    endif
 endif
 
-;; SB2!
-for j=0, ss.ntel2-1 do begin
-
-   rv = *(ss.telescope2[j].sb2ptrs)
-
-   if (where(rv.err^2 + ss.telescope2[j].jittervar.value le 0d0))[0] ne -1 then return, !values.d_infinity
-
-   modelrv = dblarr(n_elements(rv.rv))
-   for i=0, ss.nplanets-1 do begin
-
-      if ss.planet[i].fitsb2 then begin      
-         ;; rvbjd = rv.bjd ;; usually sufficient (See Eastman et al., 2013)
-
-         ;; time in target barycentric frame (expensive) -- might need w swap
-         rvbjd = bjd2target(rv.bjd, inclination=ss.planet[i].i.value, $
-                            a=ss.planet[i].a.value, tp=ss.planet[i].tp.value, $
-                            period=ss.planet[i].period.value, e=ss.planet[i].e.value,$
-                            omega=ss.planet[i].omega.value,/primary,$
-                            c=ss.constants.c/ss.constants.au*ss.constants.day)
-         
-         ;; calculate the SB2 model
-    ;     if ss.planet[i].rossiter then $
-     ;       u1 = linld(ss.star.logg.value,ss.star.teff.value,ss.star.feh.value,'V') $
-    ;     else u1 = 0d0
-         modelsb2 += exofast_rv(rvbjd,ss.planet[i].tp.value,ss.planet[i].period.value,$
-                               0d0,ss.planet[i].K2.value,$
-                               ss.planet[i].e.value,ss.planet[i].omega.value+!dpi,$
-                               slope=0d0, $
-                               rossiter=ss.planet[i].rossiter, i=ss.planet[i].i.value,a=ss.planet[i].ar.value,$
-                               p=abs(ss.planet[i].p.value),vsini=ss.star.vsini.value,$
-                               lambda=ss.planet[i].lambda.value,$
-                               u1=u1,deltarv=deltarv)
-
-      endif
-
-   endfor
-   ;; add instrumental offset, slope, and quadratic term
-   modelsb2 += ss.telescope[j].gamma.value; + ss.star.slope.value*(rv.bjd-t0) + ss.star.quad.value*(rv.bjd-t0)^2
-
-   (*ss.telescope[j].sb2ptrs).residuals = rv.rv - modelsb2
-   
-   if keyword_set(psname) then begin
-      base = file_dirname(psname) + path_sep() + file_basename(psname,'.model')
-      exofast_forprint, rv.bjd, rv.rv - modelsb2, rv.err, format='(f0.8,x,f0.6,x,f0.6)', textout=base + '.residuals.sb2.telescope_' + strtrim(j,2) + '.txt', /nocomment,/silent
-      exofast_forprint, rv.bjd, modelsb2, format='(f0.8,x,f0.6)', textout=base + '.model.sb2.telescope_' + strtrim(j,2) + '.txt', /nocomment,/silent
-   endif
-
-   sb2chi2 = exofast_like((*ss.telescope[j].sb2ptrs).residuals,ss.telescope[j].jittervar.value,rv.err,/chi2)
-   if ~finite(sb2chi2) then stop
-   chi2 +=sb2chi2
-   if ss.verbose then printandlog, ss.telescope[j].label + ' RV penalty = ' + strtrim(sb2chi2,2),ss.logname
-endfor
-
 ;; if at least one RV planet is fit, plot it
 ;if (where(ss.planet.fitrv))[0] ne -1 then begin
 ;   if keyword_set(psname) then begin

@@ -325,7 +325,18 @@ if keyword_set(debug) or keyword_set(psname) eq 1 then begin
       legendlabels = [legendlabels,strjoin(starnames[0:nstars-1],'+')]
       legendcolors = [legendcolors,colors[0]]
    
-   endif
+   endif else begin ; just one star
+	  starnames = ['A']
+      colorndx = nstars+1   
+      for i=0L, nbands-1L do begin 
+         color = colors[colorndx mod ncolors]
+		 legendlabels = starnames[lindgen(nstars)]
+         legendcolors = colors[(lindgen(nstars)+1) mod ncolors]
+         colorndx = nstars+1
+	     pointcolors[i] = color
+	  endfor
+   endelse
+   if ~keyword_set(colorndx) then colorndx = nstars+1
 
    ;; plot all stars blended together
    oplot, wavelength, alog10(smooth(total(sed,1),10)),color=colors[0]
