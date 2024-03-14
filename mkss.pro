@@ -551,8 +551,8 @@ if n_elements(rejectflatmodel) eq 0 then begin
    else rejectflatmodel = [0B]
 endif
 
-if n_elements(fitspline) eq 1 then  begin
-   fitspline = bytarr(ntran) + keyword_set(fitspline)
+if n_elements(fitspline) eq 1 then begin
+   if ntran gt 0 then fitspline = bytarr(ntran) + keyword_set(fitspline)
 endif else if n_elements(fitspline) ne ntran and n_elements(fitspline) ne 0 and ntran gt 0 then begin
    printandlog, 'FITSPLINE has ' + strtrim(n_elements(fitspline),2) + ' elements; must be an NTRANSITS (' + strtrim(ntran,2) + ') element array', logname
    return, -1
