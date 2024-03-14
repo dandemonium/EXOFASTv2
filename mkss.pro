@@ -573,8 +573,13 @@ if n_elements(requiresecondary) eq 0 then begin
    requiresecondary = bytarr(nplanets>1)
 endif
 
+<<<<<<< HEAD
 if n_elements(fitspline) eq 1 then  begin
    fitspline = bytarr(ntran>1) + keyword_set(fitspline)
+=======
+if n_elements(fitspline) eq 1 then begin
+   if ntran gt 0 then fitspline = bytarr(ntran) + keyword_set(fitspline)
+>>>>>>> fixed fitspline check when ntran=0; fixed commenting around reflection
 endif else if n_elements(fitspline) ne ntran and n_elements(fitspline) ne 0 and ntran gt 0 then begin
    printandlog, 'FITSPLINE has ' + strtrim(n_elements(fitspline),2) + ' elements; must be an NTRANSITS (' + strtrim(ntran,2) + ') element array', logname
    return, -1

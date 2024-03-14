@@ -3,6 +3,7 @@
 ;   EXOFAST_TRAN
 ;
 ;   PURPOSE:
+
 ;      Computes a transit model given a complete set of physical
 ;      parameters
 ;
@@ -159,7 +160,7 @@ if reflect ne 0d0 then begin
    ;modelflux-=1d-6*reflect*cos(2d0*!dpi*(transitbjd-tc0)/period)*planetvisible
 
    ;; This makes flux=0 during primary transit (Thanks Sam Quinn!)
-   modelflux-=(1d-6*reflect/2d0)*(cos(2d0*!dpi*(transitbjd-tc0)/period)-1d0)*planetvisible
+;.   modelflux-=(1d-6*reflect/2d0)*(cos(2d0*!dpi*(transitbjd-tc0)/period)-1d0)*planetvisible
 
    ;;modelflux+=1d-6*reflect*sin(!dpi*(transitbjd-tc0)/period)^2d0*planetvisible
 ;  if e eq 0 then begin  ;;; commented out June 6, 2023
