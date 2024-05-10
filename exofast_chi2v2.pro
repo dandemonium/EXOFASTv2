@@ -933,7 +933,7 @@ if file_test(ss.mistsedfile) or file_test(ss.fluxfile) or file_test(ss.sedfile) 
                                   debug=ss.debug, psname=epsname,$
                                   range=ss.sedrange,specphotpath=ss.specphotpath, $
                                   sperrscale=ss.specphot.sperrscale.value,$
-                                  spzeropoint=ss.specphot.spzeropoint.value, derivethermal=ss.derivethermal))
+                                  spzeropoint=ss.specphot.spzeropoint.value, derivethermal=ss.derivethermal)
 
       sedchi2 += sedarr[0]
       
@@ -945,6 +945,7 @@ if file_test(ss.mistsedfile) or file_test(ss.fluxfile) or file_test(ss.sedfile) 
 	        ;stop
          endif
       endif
+
    endif else begin
       ;; Keivan Stassun's SED
       junk = exofast_sed(ss.star.fluxfile, teffsed, $

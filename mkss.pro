@@ -573,9 +573,8 @@ if n_elements(requiresecondary) eq 0 then begin
    requiresecondary = bytarr(nplanets>1)
 endif
 
-
-if n_elements(fitspline) eq 1 then  begin
-   fitspline = bytarr(ntran>1) + keyword_set(fitspline)
+if n_elements(fitspline) eq 1 then begin
+   if ntran gt 0 then fitspline = bytarr(ntran) + keyword_set(fitspline)
 endif else if n_elements(fitspline) ne ntran and n_elements(fitspline) ne 0 and ntran gt 0 then begin
    printandlog, 'FITSPLINE has ' + strtrim(n_elements(fitspline),2) + ' elements; must be an NTRANSITS (' + strtrim(ntran,2) + ') element array', logname
    return, -1
@@ -2455,8 +2454,8 @@ if file_test(mistsedfile) or file_test(sedfile) or file_test(fluxfile) then begi
                                  replicate(0d0,nstars), replicate(10d0,nstars), replicate(1d0,nstars), $
                                  replicate(1d0,nstars), sedfile, /redo, specphotpath=specphotpath,$
                                  blend0=blend,rstar=replicate(1d0,nstars),$
-                                 sperrscale=ss.specphot.sperrscale.value[0],spzeropoint=ss.specphot.spzeropoint.value[0], derivethermal=derivethermal))
-                                 blend0=blend,rstar=replicate(1d0,nstars),sperrscale=ss.specphot.sperrscale.value
+                                 sperrscale=ss.specphot.sperrscale.value[0],spzeropoint=ss.specphot.spzeropoint.value[0], derivethermal=derivethermal)
+
       sedchi2 = sedarr[0]
       if keyword_set(derivethermal) then begin
          thermndx = where(ss.band[ss.transit[*].bandndx].label eq 'TESS')

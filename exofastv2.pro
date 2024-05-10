@@ -1779,7 +1779,7 @@ if nthreads gt 1 then begin
          'debug=debug, verbose=verbose,delay=delay,'+$
          '/silent,'+$
          'chi2func=chi2func,'+$
-         'logname=logname)'
+         'logname=logname, derivethermal=derivethermal)'
    endfor
 endif
 
@@ -1904,7 +1904,7 @@ mcmcss = mkss(priorfile=priorfile, $
               /silent, $
               chi2func=chi2func, $
               logname=logname, $
-              best=best,derivethermal=derivethermal)
+              best=best, derivethermal=derivethermal)
 
 if (size(mcmcss))[2] ne 8 then return
 

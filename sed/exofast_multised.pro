@@ -2,6 +2,7 @@
 function exofast_multised,teff, logg, feh, av, distance, lstar, errscale, sedfile, alpha=alpha, debug=debug, psname=psname, range=range, specphotpath=specphotpath, logname=logname,redo=redo,blend0=blend0,rstar=rstar, sperrscale=sperrscale,spzeropoint=spzeropoint, verbose=verbose, derivethermal=derivethermal
 
 
+
 nstars = n_elements(teff)
 
 if n_elements(alpha) eq 0 then alpha = dblarr(nstars) $
@@ -50,7 +51,6 @@ if n_elements(flux) eq 0 or keyword_set(redo) then begin
 
          fileparts = strsplit(specfiles[i],'.',/extract)
          labels[i] = fileparts[1]
-
          ;; the filename can encode the blending
          if n_elements(fileparts) ge 3 then begin
             blendtxt = strsplit(fileparts[2],',',/extract)
@@ -92,7 +92,6 @@ for j=0L, nstars-1 do begin
 
    ;; interpolation failed, skip
    if ~finite(lamflam1temp[0]) then return, [!values.d_infinity, !values.d_infinity] ; edited by DJS
-
    ;; convert to observed flux -- interpolation breaks flux=sigma*T^4, renormalize
    constants = mkconstants()
    fbol0 = (lstar[j]*constants.lsun)/(4d0*!dpi*(distance[j]*pc)^2) 
@@ -111,6 +110,7 @@ for j=0L, nstars-1 do begin
 ;   print, string(fbol0-fbol1)/fbol1*100d0,format='("(Fbol-Fbol_I)/Fbol_I = ",f0.2,"%")'
 ;stop
 ;endif
+
 
    taul1 = kapp1/kapv/1.086*Av[j]
    extinct1 = exp(-taul1)
