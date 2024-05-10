@@ -138,8 +138,8 @@ Unsupported Swift_UVW1 Unsupported Unsupported
 Unsupported Swift_UVW2 Unsupported Unsupported
 Unsupported Swift_V Unsupported Unsupported
 Unsupported TESS TESS Unsupported
-BT Tycho_B Unsupported Unsupported
-VT Tycho_V Unsupported Unsupported
+BT Tycho_B Unsupported TYCHO_TYCHO.B
+VT Tycho_V Unsupported TYCHO_TYCHO.
 Unsupported UKIDSS_H Unsupported Unsupported
 Unsupported UKIDSS_J Unsupported Unsupported
 Unsupported UKIDSS_K Unsupported Unsupported
@@ -229,4 +229,5 @@ Unsupported Z087 Unsupported  Unsupported
 Unsupported Unsupported Unsupported Gemini_Zorro.EO_562
 Unsupported Unsupported Unsupported Gemini_Zorro.EO_832
 Unsupported Unsupported Unsupported Keck_NIRC2.Brgamma
-
+Unsupported Unsupported Unsupported WIYN_NESSI.NB562
+Unsupported Unsupported Unsupported WIYN_NESSI.NB832

@@ -15,6 +15,11 @@
 ; Priors may be applied to any parameter (fitted or derived).
 ;
 ; CALLING SEQUENCE:
+;   ss = mkss(nplanets=nplanets, circular=circular, $
+;             fitslope=fitslope, fitquad=fitquad, ttvs=ttvs, tdvs=tdvs, $
+;             rossiter=rossiter, fitdt=fitdt, eprior4=eprior4, fittran=fittran, fitrv=fitrv,fitsb2=fitsb2, $
+;             nvalues=nvalues, debug=debug, priorfile=priorfile, $
+;             rvpath=rvpath, tranpath=tranpath, longcadence=longcadence, earth=earth)
 ;
 ;   This code is deep in the bowels of EXOFASTv2 and is not intended
 ;   to be user callable.
@@ -37,7 +42,7 @@
 function mkss, priorfile=priorfile, $
                prefix=prefix,$
                ;; data file inputs
-               rvpath=rvpath, tranpath=tranpath, $
+               rvpath=rvpath, tranpath=tranpath, $ ;sb2path=sb2path
                astrompath=astrompath, dtpath=dtpath, $
                ;; SED model inputs
                fluxfile=fluxfile, mistsedfile=mistsedfile, $
@@ -59,7 +64,7 @@ function mkss, priorfile=priorfile, $
                seddeblend=seddeblend, fitdilute=fitdilute, $
                ;; planet inputs
                nplanets=nplanets, $
-               fittran=fittran,fitrv=fitrv,$
+               fittran=fittran,fitrv=fitrv,$ ;fitsb2=fitsb2
                rossiter=rossiter, fitdt=fitdt,$ 
                circular=circular, tides=tides, $
                alloworbitcrossing=alloworbitcrossing,$
@@ -88,7 +93,8 @@ function mkss, priorfile=priorfile, $
                silent=silent, $
                chi2func=chi2func, $
                logname=logname, $
-               best=best
+               best=best, fitgaia=fitgaia
+
 
 if n_elements(transitrange) eq 0 then transitrange=dblarr(6)+!values.d_nan
 if n_elements(rvrange) eq 0 then rvrange=dblarr(6) + !values.d_nan
@@ -236,6 +242,10 @@ if n_elements(fitrv) ne nplanets and n_elements(fitrv) gt 1 then begin
    printandlog, "FITRV must have NPLANETS (" + strtrim(nplanets,2) + ") elements",logname
    return, -1
 endif
+if n_elements(fitsb2) ne nplanets and n_elements(fitsb2) gt 1 then begin
+   printandlog, "FITSB2 must have NPLANETS (" + strtrim(nplanets,2) + ") elements",logname
+   stop
+endif
 if n_elements(chen) ne nplanets and n_elements(chen) gt 1 then begin
    printandlog, "CHEN must have NPLANETS (" + strtrim(nplanets,2) + ") elements",logname
    return, -1
@@ -293,6 +303,8 @@ if n_elements(fitthermal) eq 0 then fitthermal = ['']
 if n_elements(fitreflect) eq 0 then fitreflect = ['']
 if n_elements(fitphase) eq 0 then fitphase = ['']
 if n_elements(fitellip) eq 0 then fitellip = ['']
+if n_elements(fitbeam) eq 0 then fitbeam = ['']
+if n_elements(fitdilute) eq 0 then fitdilute = ['']
 if n_elements(tranpath) eq 0 then tranpath = ''
 if n_elements(rvpath) eq 0 then rvpath = ''
 if n_elements(astrompath) eq 0 then astrompath = ''
@@ -616,7 +628,19 @@ endif else begin
       return, -1
    endif
 endelse
-
+if n_elements(sb2path) eq 0 then begin
+   ntel2 = 0
+   sb2path = ''
+endif else if sb2path eq '' then begin
+   ntel2 = 0
+   sb2path = ''
+endif else begin
+   sb2files = file_search(sb2path,count=ntel2)
+endelse
+if ntel2 eq 0 and sb2path ne '' then begin
+   printandlog, "SB2 path (" + sb2path + ") not found! Make sure the file exists or remove the argument to proceed without it.", logname
+   stop
+endif
 ;; same for DT path
 if dtpath ne '' then begin
    dtfiles = file_search(dtpath,count=ndt)
@@ -648,6 +672,13 @@ if n_elements(fitrv) eq 0 then begin
    else fitrv = bytarr(nplanets>1)+1B
 endif
 
+if n_elements(fitsb2) eq 0 then begin
+   if ntel2 eq 0 then fitsb2 = bytarr(nplanets>1) $
+   else fitsb2 = bytarr(nplanets>1)+1B
+endif
+if n_elements(lineark) eq 0 then lineark = bytarr(nplanets>1)
+
+
 if n_elements(fitdt) eq 0 then begin
    if ndt eq 0 then fitdt = bytarr(nplanets>1) $
    else fitdt = bytarr(nplanets>1)+1B
@@ -673,7 +704,10 @@ if n_elements(fitrv) ne nplanets and nplanets ne 0 then begin
    printandlog, "FITRV must have NPLANETS elements", logname
    return, -1
 endif
-
+if n_elements(fitsb2) ne nplanets and nplanets ne 0 then begin
+   printandlog, "FITSB2 must have NPLANETS elements", logname
+   stop
+endif
 if nplanets ne 0 then begin
    if (where((~fitrv) and (~fittran)))[0] ne -1 and astrompath eq '' then begin
       printandlog, 'Either a transit or RV must be fit for each planet', logname
@@ -694,7 +728,17 @@ if rvpath eq '' and nrvfit ne 0 then begin
    printandlog, 'Remove FITRV or specify a RVPATH'
    return, -1
 endif
-
+junk = where(fitsb2,nsb2fit)
+if sb2path ne '' and nsb2fit eq 0 then begin
+   printandlog, 'WARNING: an SB2PATH was specified, but no SB2 planets are fit. Ignoring the supplied SB2 RVs'
+   printandlog, 'Remove SB2PATH or set at least one planet in FITSB2 to 1 to remove this message.'
+   ntel2 = 0
+endif
+if sb2path eq '' and nsb2fit ne 0 then begin
+   printandlog, 'ERROR: an SB2PATH was not specified, but SB2 RVs were requested to be fit (FITSB2 != 0).'
+   printandlog, 'Remove FITSB2 or specify an SB2PATH'
+   stop
+endif
 ;; was tranpath specified but no planets are fit? (ignore it)
 junk = where(fittran,ntranfit)
 if tranpath ne '' and ntranfit eq 0 then begin
@@ -1659,6 +1703,30 @@ logk.label = 'logk'
 logk.cgs = 100d0
 logk.derive=0
 
+k2 = parameter
+k2.value = 10d0
+k2.unit = 'm/s'
+k2.description = 'SB2 RV semi-amplitude'
+k2.latex = 'K_2'
+k2.label = 'k2'
+k2.cgs = 100d0
+if nplanets eq 0 then k2.derive=0
+;k2.fit = 0
+;if keyword_set(fitsb2) then k2.derive=1
+
+logk2 = parameter
+logk2.value = 10d0
+logk2.unit = 'm/s'
+logk2.description = 'Log of SB2 RV semi-amplitude'
+logk2.latex = '\log{K_2}'
+logk2.label = 'logk2'
+logk2.cgs = 100d0
+logk2.derive = 0
+;logk2.fit = 0
+;if nplanets eq 0 then logk2.derive=0 $
+;else if keyword_set(fitsb2) then logk2.fit = 1
+;logk2.scale = 1d0
+
 period = parameter
 period.unit = 'days'
 period.description = 'Period'
@@ -1807,7 +1875,8 @@ rpsun.description = 'Radius'
 rpsun.latex = 'R_P'
 rpsun.label = 'rpsun'
 rpsun.cgs = 6.955d10
-rpsun.derive = 0
+rpsun.derive = 1
+if nplanets eq 0 then rpsun.derive = 0
 
 rpearth = parameter
 rpearth.unit = '\re'
@@ -1914,7 +1983,7 @@ reflect = parameter
 reflect.description = 'Reflection from the planet'
 reflect.latex = 'A_R'
 reflect.label = 'reflect'
-reflect.scale = 1d4
+reflect.scale = 1d2
 reflect.unit = 'ppm'
 reflect.fit = 0
 reflect.derive = 0
@@ -2096,6 +2165,7 @@ star = create_struct(mstar.label,mstar,$
                      distance.label,distance,$
                      slope.label,slope,$
                      quad.label,quad,$
+                     'fluxfile',' ',$
                      'rootlabel','Stellar Parameters:',$
                      'columnlabels',columnlabels,$
                      'label','')
@@ -2108,7 +2178,6 @@ star = create_struct(mstar.label,mstar,$
 constants = mkconstants()
 
 ndata = 0L
-
 
 ;if n_elements(nvalues) ne 0 then stop
 
@@ -2142,6 +2211,8 @@ planet = create_struct($
          tcirc.label, tcirc,$
          K.label,k,$              ;; RV parameters
          logK.label,logk,$              ;; RV parameters
+         K2.label,k2,$              ;; SB2 parameters
+         logK2.label,logk2,$              ;; SB2 parameters
          p.label,p,$              ;; Primary Transit parameters
          ar.label,ar,$
          delta.label,delta)
@@ -2214,10 +2285,11 @@ planet = create_struct($
          ptg.label,ptg,$
          ps.label,ps,$                 
          psg.label,psg,$     
-         beam.label,beam,$     ;; other
+ ;        beam.label,beam,$     ;; other
          'starndx',0L,$
          'fittran',fittran[0],$        ;; booleans
          'fitrv',fitrv[0],$
+         'fitsb2',fitsb2[0],$
          'chen',chen[0],$
          'i180',i180[0],$
          'rossiter',rossiter[0],$
@@ -2239,7 +2311,8 @@ band = create_struct(u1.label,u1,$ ;; linear limb darkening
                      ;dilute.label,dilute,$   ;; dilution
                      reflect.label,reflect,$ ;; reflection
                      phaseshift.label,phaseshift,$ ;; reflection
-                     ellipsoidal.label,ellipsoidal,$
+                     ellipsoidal.label,ellipsoidal,$ ;; ellipsoidal variations
+                     beam.label,beam,$ ;; beaming                     
                      eclipsedepth.label,eclipsedepth,$
                      mag.label,mag,$
                      phottobary.label,phottobary,$
@@ -2254,18 +2327,18 @@ telescope = create_struct(gamma.label,gamma,$
                           jitter.label,jitter,$
                           jittervar.label,jittervar,$
                           'rvptrs', ptr_new(),$
+                          'sb2ptrs',ptr_new(),$
                           'detrend',ptr_new(/allocate_heap),$ ;; array of detrending parameters
                           'name','',$
                           'chi2',0L,$
                           'rootlabel','Telescope Parameters:',$
                           'label','')
 
-if ntel le 0 then begin
+if ntel+ntel2 le 0 then begin
    telescope.jittervar.fit = 0
    telescope.jittervar.derive = 0
    telescope.jitter.derive = 0
 endif
-
 ;; for each transit
 transit = create_struct(variance.label,variance,$ ;; jitter
                         sigma_r.label,sigma_r,$ ;; Red noise
@@ -2331,6 +2404,7 @@ ss = create_struct('star',replicate(star,nstars>1),$
                    'verbose',keyword_set(verbose),$
                    'tides',keyword_set(tides),$
                    'ntel',ntel,$
+                   'ntel2',ntel2,$
                    'rvepoch',0d0,$
                    'ntran',ntran,$
                    'nastrom',nastrom,$
@@ -2377,6 +2451,7 @@ ss = create_struct('star',replicate(star,nstars>1),$
                    ;; metadata to be able to restart fit
                    'circular', circular,$
                    'fitrv',fitrv,$
+                   'fitsb2',fitsb2,$
                    'fittran',fittran,$
                    'fitdt',fitdt,$
                    'rossiter',rossiter,$
@@ -2695,10 +2770,10 @@ for i=0, nplanets-1 do begin
 
    endif
 
-   if fitbeam[i] then begin
-      ss.planet[i].beam.fit = 1B
-      ss.planet[i].beam.derive = 1B
-   endif else if derivebeam[i] then ss.planet[i].beam.derive = 1B
+;   if fitbeam[i] then begin
+;      ss.planet[i].beam.fit = 1B
+;      ss.planet[i].beam.derive = 1B
+;   endif else if derivebeam[i] then ss.planet[i].beam.derive = 1B
 
    if i180[i] or ss.nastrom gt 0 then ss.planet[i].i180 = 1
 
@@ -2750,6 +2825,13 @@ for i=0, nband-1 do begin
       if ~keyword_set(silent) then printandlog, "Fitting reflected light for " + ss.band[i].name + " band", logname
    endif
 
+   match = where(fitbeam eq ss.band[i].name)
+   if match[0] ne -1 then begin
+      ss.band[i].beam.fit = 1B
+      ss.band[i].beam.derive = 1B
+      printandlog, "Fitting Doppler beaming for " + ss.band[i].name + " band", logname
+   endif
+
 ;   match = where(fitphase eq ss.band[i].name)
 ;   if match[0] ne -1 then begin
 ;      ss.band[i].phaseshift.fit = 1B
@@ -2768,7 +2850,7 @@ for i=0, nband-1 do begin
    if match[0] ne -1 then begin
       ss.band[i].ellipsoidal.fit = 1B
       ss.band[i].ellipsoidal.derive = 1B
-      if ~keyword_set(silent) then printandlog, "Fitting ellipsoidal for " + ss.band[i].name + " band", logname
+      if ~keyword_set(silent) then printandlog, "Fitting ellipsoidal variation for " + ss.band[i].name + " band", logname
    endif
 
 endfor
@@ -2920,7 +3002,20 @@ if ntel gt 0 then begin
 endif else begin
    ss.telescope[*].rvptrs = ptr_new(/allocate_heap)
 endelse
-
+;; read in the SB2 RV files
+if ntel2 gt 0 then begin
+   ss.telescope[*].sb2ptrs = ptrarr(ntel2,/allocate_heap)
+   printandlog, "The index for each SB2 data set is",logname
+   maxpoints = 0
+   for i=0,ntel2-1 do begin
+      printandlog, string(i,sb2files[i],format='(i2,x,a)'),logname
+      *(ss.telescope[i].sb2ptrs) = readrv(sb2files[i])
+      ss.telescope[i].label = (*(ss.telescope[i].sb2ptrs)).label
+   endfor
+   printandlog, '', logname
+endif else begin
+   ss.telescope[*].sb2ptrs = ptr_new(/allocate_heap)
+endelse
 for i=0, ss.ntel-1 do begin
    rv = *(ss.telescope[i].rvptrs)
    ss.telescope[i].gamma.value = mean(rv.rv)
@@ -2959,6 +3054,20 @@ if ss.ntel gt 0 then begin
    ss.planet[*].k.value = sqrt(2d0)*stddev(allrv)
    ss.planet[*].k.userchanged=1B
 endif
+
+;for i=0, ss.ntel2-1 do begin
+;   sb2 = *(ss.telescope[i].sb2ptrs)
+;  ; ss.telescope[i].gamma.value = mean(sb2.rv)
+;   if i eq 0 then begin
+;      alltime = sb2.bjd
+;      allrv = sb2.rv-ss.telescope[i].gamma.value
+;   endif else begin
+;      alltime = [alltime,sb2.bjd]
+;      allrv = [allrv,sb2.rv-ss.telescope[i].gamma.value]
+;   endelse
+;endfor
+;if ss.ntel2 gt 0 then t0 = (min(alltime) + max(alltime))/2d0
+;if ss.ntel2 gt 0 then ss.planet[*].k2.value = sqrt(2d0)*stddev(allrv)
 
 ;; read in astrometry files
 if nastrom gt 0 then begin
@@ -3399,6 +3508,13 @@ endif else begin
    if ss.nplanets gt 0 then ss.planetorder = sort(ss.planet.period.value[0])
 endelse
 
+for i=0,n_elements(ss.planet)-1 do begin ;;DJS 20230228 -- cosi scale getting set to -NaN somewhere between here and
+   if ss.planet[i].cosi.scale eq !values.d_nan then begin
+   	printandlog, "cos(i) is nan; setting scale = 0.1",logname
+   	ss.planet[i].cosi.scale = 0.1       ;;                variable/struct declaration
+   endif
+endfor   
+
 ;; load stellar structure into common block
 ;; must do it here because threads can't pass structures
 if n_elements(chi2func) eq 1 then junk = call_function(chi2func, /loadss, ss0=ss)
@@ -3412,6 +3528,7 @@ ss.ndata += 3*total(ss.mist)
 ss.ndata += 3*total(ss.yy)
 ss.ndata += 3*total(ss.parsec)
 ss.ndata += 2*total(ss.torres)
+
 
 return, ss
 

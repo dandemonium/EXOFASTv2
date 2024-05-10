@@ -2,7 +2,7 @@
 ;; Required for virtual machine (free) use
 pro readargs, argfile, priorfile=priorfile, $
               prefix=prefix,$
-              rvpath=rvpath, tranpath=tranpath, $
+              rvpath=rvpath, tranpath=tranpath, $ ;sb2path=sb2path
               astrompath=astrompath, dtpath=dtpath, $
               fluxfile=fluxfile,mistsedfile=mistsedfile,$
               sedfile=sedfile,specphotpath=specphotpath,$
@@ -18,7 +18,7 @@ pro readargs, argfile, priorfile=priorfile, $
               nstars=nstars,starndx=starndx, $
               seddeblend=seddeblend,fitdilute=fitdilute, $
               nplanets=nplanets, $
-              fittran=fittran, fitrv=fitrv, $
+              fittran=fittran, fitrv=fitrv, $ ;fitsb2=fitsb2
               rossiter=rossiter, fitdt=fitdt, $
               circular=circular, tides=tides, $ 
               alloworbitcrossing=alloworbitcrossing, $
@@ -48,7 +48,7 @@ pro readargs, argfile, priorfile=priorfile, $
               mksummarypg=mksummarypg,$
               nocovar=nocovar,$
               plotonly=plotonly, bestonly=bestonly,$
-              logname=logname
+              logname=logname, fitgaia=fitgaia
 
 ;; first get the log name so we can log any errors
 line = ''
@@ -81,6 +81,8 @@ while not eof(lun) do begin
             rvpath = strtrim(entries[1],2)
          endif else if strupcase(strtrim(entries[0],2)) eq 'TRANPATH' then begin
             tranpath = strtrim(entries[1],2)
+         endif else if strupcase(strtrim(entries[0],2)) eq 'SB2PATH' then begin
+            sb2path = strtrim(entries[1],2)
          endif else if strupcase(strtrim(entries[0],2)) eq 'ASTROMPATH' then begin
             astrompath = strtrim(entries[1],2)
          endif else if strupcase(strtrim(entries[0],2)) eq 'DTPATH' then begin
@@ -201,6 +203,8 @@ while not eof(lun) do begin
             tides = boolean(entries[1])
          endif else if strupcase(strtrim(entries[0],2)) eq 'NPLANETS' then begin
             nplanets = long(entries[1])
+         endif else if strupcase(strtrim(entries[0],2)) eq 'FITSB2' then begin
+            fitsb2 = boolean(json_parse(entries[1],/toarray))
          endif else if strupcase(strtrim(entries[0],2)) eq 'NSTARS' then begin
             nstars = long(entries[1])
          endif else if strupcase(strtrim(entries[0],2)) eq 'STARNDX' then begin
@@ -251,6 +255,8 @@ while not eof(lun) do begin
             fitwavelet = boolean(entries[1])
          endif else if strupcase(strtrim(entries[0],2)) eq 'SKIPTT' then begin
             skiptt = boolean(entries[1])
+         endif else if strupcase(strtrim(entries[0],2)) eq 'FITGAIA' then begin
+            fitgaia = boolean(entries[1])
          endif else if strupcase(strtrim(entries[0],2)) eq 'USERNOTE' then begin
             usernote = entries[1]
          endif else if strupcase(strtrim(entries[0],2)) eq 'MKSUMMARYPG' then begin

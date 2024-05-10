@@ -1,9 +1,12 @@
-pro	mag2fluxconv,fname,lameff,weff,flux,fluxerr,teff=teff,wiseab=wiseab,wave=wave,filter_curves=filter_curves, zero_points=zero_points
+pro	mag2fluxconv,fname,lameff,weff,flux,fluxerr,teff=teff,wiseab=wiseab,wave=wave,filter_curves=filter_curves, zero_points=zero_points,fitgaia=fitgaia
+
 
 ; fname - filename with band, mag, magerr
 ; Returns fluxes and errors in lamFlam units: erg/cm^2/s
 ; Returns lameff,weff in um
 ;
+; Modified 2023 Mar 12 by Dan Stevens to include Gaia BP/RP spectrophotometry and
+; to spit out the prettymodel SED atmosphere.
 ; REFS
 ; Spitzer cookbook unit conversions: 
 ;   http://www.ipac.caltech.edu/2mass/releases/allsky/faq.html#jansky
@@ -36,7 +39,7 @@ pro	mag2fluxconv,fname,lameff,weff,flux,fluxerr,teff=teff,wiseab=wiseab,wave=wav
 ; 
 
 if n_params() lt 1 then begin
-  print,'syntax: mag2fluxconv,fname,lameff,weff,flux,fluxerr,teff=teff'
+  print,'syntax: mag2fluxconv,fname,lameff,weff,flux,fluxerr,teff=teff,wiseab=wiseab,galex=galex,fitgaia=fitgaia'
   retall
 endif
 
@@ -53,7 +56,6 @@ zero_points=dblarr(n_elements(band))
  
 for i=0,n_elements(band)-1 do begin
    filename = ''
-
    case strn(band(i)) of
       'U':  begin
          lameff(i)=poly(theta,[3476.,162.,86.,-63.]) / 1.e4    ; um (ADPS2)
@@ -340,6 +342,24 @@ flux = flux[good]
 fluxerr = fluxerr[good]
 
 ;forprint,band,lameff,weff,flux,fluxerr
-
+;add Gaia spectrophotometry
+if keyword_set(fitgaia) then begin
+	readcol,'gaia.bprp.*.dat',lamgaia,lamflamgaia,lamflam_errgaia,catalog_err_gaia,format='f,f,f,f',/silent,delimiter=',',comment='#' ;in nm and W/m^2/nm
+	
+	lamflamgaia *= 1000.*lamgaia ; W/m^2/nm to erg/s/cm^2/nm to erg/s/cm^2 
+	lamflam_errgaia *= 1000.*lamgaia ; W/m^2/nm to erg/s/cm^2/nm to erg/s/cm^2
+	lamgaia *= 0.001 ; nm to microns
+	weff_gaia = fltarr(n_elements(lamgaia))
+	gaiaband = make_array(n_elements(lamflamgaia),/string,value='BPRP') ; DJS 2023 Mar 12
+	
+	band = [band,gaiaband] ; DJS 2023 Mar 12
+	lameff = [lameff,lamgaia]
+	flux = [flux,lamflamgaia]
+	fluxerr = [fluxerr,lamflam_errgaia]
+	
+	weff_gaia[0] = lamgaia[1]-lamgaia[0]
+	for i=1, n_elements(lamgaia)-1 do weff_gaia[i] = lamgaia[i]-lamgaia[i-1]
+	weff = [weff,weff_gaia]
+endif
 end
 

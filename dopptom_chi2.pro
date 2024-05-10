@@ -78,8 +78,16 @@ ntimes = sz[2]
 ;; This presumes we're using an ~optical spectrograph for the observations
 beta = dblarr(ntimes)
     
+ldcoeffs = quadld(logg, teff, feh, 'V')
+u1 = ldcoeffs[0]
+u2 = ldcoeffs[1]
+if ((not finite(u1)) or (not finite(u2))) then  return, !values.d_infinity
+
+;z = exofast_getb2(doptom.bjd, i=inc, a=ar, tperiastron=tp, period=period, e=e,omega=omega,q=q,z2=depth,x0=x,y0=y)
+;up = x*cos(lambda) + y*sin(lambda)
+;tperiastron=localtc
 tp = tc - period*exofast_getphase(e,omega,/pri)
-z = exofast_getb2(doptom.bjd, i=inc, a=ar, tperiastron=tp, period=Period, e=e,omega=omega,z2=depth, x2=xp,y2=yp)
+z = exofast_getb2(doptom.bjd, i=inc, a=ar, tperiastron=tp, period=Period, e=e,omega=omega,q=q,z2=depth, x2=xp,y2=yp)
 up = xp*cos(lambda) - yp*sin(lambda)
 
 primary = where(depth lt 0,complement=secondary)     

@@ -1,5 +1,5 @@
 ;; The SED constrains Teff, logg, [Fe/H], Extinction, and (Rstar/Distance)^2
-function exofast_sed,fluxfile,teff,rstar,Av,d,logg=logg,met=met,alpha=alpha,f0=f0, fp0=fp0, ep0=ep0, verbose=verbose, psname=psname, pc=pc, rsun=rsun, interpfiles=interpfiles, logname=logname, fbol=fbol, debug=debug, redo=redo, flux=flux, oned=oned, wavelength=wavelength
+function exofast_sed,fluxfile,teff,rstar,Av,d,logg=logg,met=met,alpha=alpha,f0=f0, fp0=fp0, ep0=ep0, verbose=verbose, psname=psname, pc=pc, rsun=rsun, interpfiles=interpfiles, logname=logname, fbol=fbol, debug=debug, redo=redo, flux=flux, oned=oned, wavelength=wavelength,fitgaia=fitgaia
 
 common sed_block, klam, kkap, kapv, fp, ep, wp, widthhm, n, m, w1, kapp1
 
@@ -19,7 +19,7 @@ if n_elements(rsun) eq 0 then rsun=6.96e10 ;; cm
 
 ;; don't do this every time
 if n_elements(fp) eq 0 or keyword_set(redo) then begin
-   mag2fluxconv,fluxfile,wp,widthhm,fp,ep,teff=teff 
+   mag2fluxconv,fluxfile,wp,widthhm,fp,ep,teff=teff,/gal,fitgaia=fitgaia
    n=n_elements(wp)
    m=where(ep gt 0)
    
@@ -129,6 +129,8 @@ if keyword_set(debug) or keyword_set(psname) eq 1 then begin
       device, /close
       device, encapsulated=0
 
+      modelfilename = file_dirname(psname) + path_sep() + file_basename(psname,'.eps') + '.prettymodel.sed.txt'
+      exofast_forprint, w1, alog10(smooth(flux,10)), textout=modelfilename, comment='# Wavelength (um), model flux (erg/s/cm^2)'
       residualfilename = file_dirname(psname) + path_sep() + file_basename(psname,'.eps') + '.residuals.txt'
       exofast_forprint, wp, f, fp, ep, f-ep, textout=residualfilename, comment='# Wavelength (um), model flux, flux, error, residuals (erg/s/cm^2)' 
 

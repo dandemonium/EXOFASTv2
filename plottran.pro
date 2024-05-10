@@ -103,8 +103,8 @@ for i=0L, ss.nplanets-1 do begin
 
       if band.reflect.fit then phasecurve[i,j] = 1B
       if band.ellipsoidal.fit then phasecurve[i,j] = 1B
-      if ss.planet[i].beam.fit ne 0 then phasecurve[i,j] = 1B
-
+      if band.beam.fit ne 0 then phasecurve[i,j] = 1B
+;      if ss.planet[i].beam.fit ne 0 then phasecurve[i,j] = 1B
       u1 = band.u1.value[ndx]
       u2 = band.u2.value[ndx]
 ;      exofast_occultquad_cel, abs(ss.planet[i].b.value[ndx]), u1, u2, ss.planet[i].p.value[ndx],mu1
@@ -226,7 +226,8 @@ for j=0, ss.ntran-1 do begin
                                     reflect=band.reflect.value[ndx], $
                                     dilute=ss.transit[j].dilute.value[ndx],$
                                     ellipsoidal=band.ellipsoidal.value[ndx],$
-                                    beam=ss.planet[i].beam.value[ndx],$
+                                    beam=band.beam.value[ndx], $
+;                                    beam=ss.planet[i].beam.value[ndx],$
                                     tc=ss.planet[i].tc.value[ndx],$
                                     rstar=ss.star[ss.planet[i].starndx].rstar.value[ndx]/AU,$
                                     au=au,$
@@ -251,7 +252,8 @@ for j=0, ss.ntran-1 do begin
                               reflect=band.reflect.value[ndx], $
                               dilute=ss.transit[j].dilute.value[ndx],$
                               ellipsoidal=band.ellipsoidal.value[ndx],$
-                              beam=ss.planet[i].beam.value[ndx],$
+                              beam=band.beam.value[ndx], $
+;                              beam=ss.planet[i].beam.value[ndx],$
                               tc=ss.planet[i].tc.value[ndx],$
                               rstar=ss.star[ss.planet[i].starndx].rstar.value[ndx]/AU,$
                               au=au,$
@@ -312,7 +314,8 @@ for jj=0L, 1 do begin
       duration = t14s
       delta = depth2
       xtitle = exofast_textoidl('Time - T_S (Hrs)') 
-      t_eclipse = ss.planet.ts.value[ndx]
+      t_eclipse = ts ;ss.planet.ts.value[ndx]
+
    endelse
 
    ;; get the right windows/page numbers
@@ -413,7 +416,8 @@ for jj=0L, 1 do begin
                                        reflect=band.reflect.value[ndx], $
                                        dilute=ss.transit[j].dilute.value[ndx],$
                                        ellipsoidal=band.ellipsoidal.value[ndx],$
-                                       beam=ss.planet[i].beam.value[ndx],$                                      
+                                       beam=band.beam.value[ndx], $
+;                                       beam=ss.planet[i].beam.value[ndx],$                                      
                                        tc=ss.planet[i].tc.value[ndx],$
                                        rstar=ss.star[ss.planet[i].starndx].rstar.value[ndx]/AU,$
                                        au=au,$
@@ -438,7 +442,8 @@ for jj=0L, 1 do begin
                                  reflect=band.reflect.value[ndx], $
                                  dilute=ss.transit[j].dilute.value[ndx],$
                                  ellipsoidal=band.ellipsoidal.value[ndx],$
-                                 beam=ss.planet[i].beam.value[ndx],$
+                                 beam=band.beam.value[ndx], $
+;                                 beam=ss.planet[i].beam.value[ndx],$
                                  tc=ss.planet[i].tc.value[ndx],$
                                  rstar=ss.star[ss.planet[i].starndx].rstar.value[ndx]/AU,$
                                  au=au,$
@@ -491,11 +496,15 @@ for jj=0L, 2 do begin
       duration = t14s
       delta = depth2
       xtitle = exofast_textoidl('Time - T_S (Hrs)') 
-      t_eclipse = ss.planet.ts.value[ndx]
+      t_eclipse = ts; ss.planet.ts.value[ndx]
    endif else if jj eq 2 then begin
       ;; make a phase curve plot
       mapping = phasecurve
       duration = period/2d0
+      delta = depth;2
+;      xtitle=exofast_textoidl('Time - T_S (Hrs)')
+      xtitle=exofast_textoidl('Time - T_C (Hrs)')
+      t_eclipse = ss.planet.tc.value[ndx];ss.planet.ts.value[ndx]
       delta = depth2
       xtitle=exofast_textoidl('Time - T_S (Hrs)')
       t_eclipse = ss.planet.ts.value[ndx]
@@ -659,5 +668,5 @@ if keyword_set(psname) then begin
    exofast_fixps, psname
 endif
 set_plot, mydevice
-
+cgPS2PDF,psname
 end
