@@ -56,7 +56,7 @@ if n_elements(teffgrid) eq 0 or keyword_set(redo) then begin
       match = (where(claretname eq bands[i]))[0]
       filename = filepath(mistname[match] + '.idl', root_dir=getenv('EXOFAST_PATH'),subdir=['sed','mist'])
       if match[0] eq -1 or not file_test(filename) then begin
-         print, bands[i] + ' not supported, remove or comment out from ' + sedfile
+         print, bands[i] + ' not supported, remove or comment out from SED photometry file (or set to 0 if transit)'
          stop
       endif
       restore, filename ;; this contains bcarray and filterproperties
