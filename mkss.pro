@@ -2638,13 +2638,18 @@ for i=0, nband-1 do begin
       if ~keyword_set(silent) then printandlog, "Fitting reflected light for " + ss.band[i].name + " band", logname
    endif
 
-   match = where(fitbeam eq ss.band[i].name)
-   if match[0] ne -1 then begin
-      ss.band[i].beam.fit = 1B
-      ss.band[i].beam.derive = 1B
-      printandlog, "Fitting Doppler beaming for " + ss.band[i].name + " band", logname
-   endif
-
+;   match = where(fitbeam eq ss.band[i].name)
+;   if match[0] ne -1 then begin
+;      ss.band[i].beam.fit = 1B
+;      ss.band[i].beam.derive = 1B
+;      printandlog, "Fitting Doppler beaming for " + ss.band[i].name + " band", logname
+;   endif
+;   match = where(fitbeam eq ss.band[i].name)
+;   if match[0] ne -1 then begin
+;      ss.band[i].beam.fit = 0B
+;      ss.band[i].beam.derive = 0B
+;      printandlog, "Not fitting Doppler beaming for " + ss.band[i].name + " band", logname
+;   endif
 ;   match = where(fitphase eq ss.band[i].name)
 ;   if match[0] ne -1 then begin
 ;      ss.band[i].phaseshift.fit = 1B

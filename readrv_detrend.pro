@@ -6,7 +6,7 @@ line = ''
 openr, lun, filename,  /get_lun
 readf, lun, line
 if strpos(line,'SB2_') ne -1 then begin
-   planet = long((strsplit(line,'SB2_',/extract,/regex))[1])
+   planet = long((strsplit(line,'SB2_',/extract,/regex)));[1])
    sb2line = 1B
    readf, lun, line
 endif else begin
