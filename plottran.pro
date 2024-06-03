@@ -99,7 +99,7 @@ for i=0L, ss.nplanets-1 do begin
 
       if band.reflect.fit then phasecurve[i,j] = 1B
       if band.ellipsoidal.fit then phasecurve[i,j] = 1B
-      if band.beam.fit ne 0 then phasecurve[i,j] = 1B
+      if band.beam.fit then phasecurve[i,j] = 1B
 ;      if ss.planet[i].beam.fit ne 0 then phasecurve[i,j] = 1B
       u1 = band.u1.value[ndx]
       u2 = band.u2.value[ndx]
