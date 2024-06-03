@@ -76,6 +76,38 @@ au = ss.constants.au/ss.constants.rsun
 chi2 = 0.d0
 determinant = 1d0
 
+;; if values are linked, we must propagate them before we check boundaries
+;; if value is a map, and the variable is fixed, we must propagate it here
+for i=0L, n_elements(*ss.priors)-1 do begin
+
+   ;; Skip priors with penalties -- the penalties will guide them to agree
+   prior = (*ss.priors)[i]
+
+   ;; if it's not fixed to a linked parameter, skip it. The penalties will sort it out
+   if prior.gaussian_width ne 0d0 or prior.value[1] eq -1 then continue
+   
+   ;; the prior is linked to another variable -- get its value
+   if prior.value[4] ne -1 then begin
+      value = (*ss.(prior.value[0])[prior.value[1]].(prior.value[2])[prior.value[3]]).(prior.value[4])[prior.value[5]].value
+;      value = ss.(prior.value[0])[prior.value[1]].(prior.value[2])[prior.value[3]].(prior.value[4])[prior.value[5]].value
+   endif else if prior.value[2] ne -1 then begin
+      value = ss.(prior.value[0])[prior.value[1]].(prior.value[2])[prior.value[3]].value
+   endif else begin
+      value = ss.(prior.value[0])[prior.value[1]].value
+   endelse
+
+   ;; assign the value
+   if prior.map[4] ne -1 then begin
+      (*ss.(prior.map[0])[prior.map[1]].(prior.map[2])[prior.map[3]]).(prior.map[4])[prior.map[5]].value = value
+      ;ss.(prior.map[0])[prior.map[1]].(prior.map[2])[prior.map[3]].(prior.map[4])[prior.map[5]].value = value
+   endif else if prior.map[2] ne -1 then begin
+      ss.(prior.map[0])[prior.map[1]].(prior.map[2])[prior.map[3]].value = value
+   endif else if prior.map[0] ne -1 then begin
+      ss.(prior.map[0])[prior.map[1]].value = value
+   endif     
+
+endfor
+
 ;; *** First make sure step parameters are in bounds ***
 
 ;; physical limb darkening (Kipping, 2013)
@@ -130,7 +162,7 @@ endif
 ;bad = where(ss.band.dilute.fit and (ss.band.dilute.value le -1d0 or ss.band.dilute.value ge 1d0),nbad)
 bad = where(ss.transit.dilute.fit and (ss.transit.dilute.value le -1d0 or ss.transit.dilute.value ge 1d0),nbad)
 if nbad gt 0 then begin
-   if ss.debug or ss.verbose then printandlog, 'dilution is bad (' + strtrim(ss.band[bad].dilute.value,2) + ')',ss.logname
+   if ss.debug or ss.verbose then printandlog, 'dilution is bad (' + strtrim(ss.transit[bad].dilute.value,2) + ')',ss.logname
    return, !values.d_infinity
 endif
 
@@ -176,6 +208,18 @@ if nbad gt 0 then begin
    return, !values.d_infinity
 endif
 
+;; ramp boundary checking
+rampfit = where(ss.transit.rampexp.fit)
+if rampfit[0] ne -1 then begin
+   for i=0L, n_elements(rampfit)-1 do begin
+      transit = *(ss.transit[rampfit[i]].transitptrs)
+      if ss.transit[rampfit[i]].rampexp.value le 0d0 or ss.transit[rampfit[i]].rampexp.value gt transit.timerange*10d0 then begin
+         if ss.debug or ss.verbose then printandlog, 'rampexp ' + strtrim(rampfit[i],2) + ' is bad (' + strtrim(ss.transit[rampfit[i]].rampexp.value,2) + ')', ss.logname
+         return, !values.d_infinity
+      endif
+   endfor
+endif
+
 ;; -c < gamma < c
 bad = where(abs(ss.telescope.gamma.value) gt ss.constants.c/ss.constants.meter,nbad)
 if nbad gt 0 then begin
@@ -216,6 +260,21 @@ endif
 bad = where(ss.star.errscale.value lt 1d-2 or ss.star.errscale.value gt 1d2, nbad)
 if nbad gt 0 then begin
    if ss.debug or ss.verbose then printandlog, 'error scale is bad (' + strtrim(ss.star[bad].errscale.value,2) + ')', ss.logname
+   return, !values.d_infinity
+endif
+
+;; 0.01 < Specphot error scaling < 10000
+bad = where(ss.specphot.sperrscale.value lt 1d-2 or ss.specphot.sperrscale.value gt 1d5, nbad)
+if nbad gt 0 then begin
+   if ss.debug or ss.verbose then printandlog, 'spectrophotometry error scale is bad (' + strtrim(ss.specphot[bad].sperrscale.value,2) + ')', ss.logname
+   return, !values.d_infinity
+endif
+
+;; -0.2 < spzeropoint < 0.2
+;bad = where(ss.specphot.spzeropoint.value lt -0.3d0 or ss.specphot.spzeropoint.value gt 0.3d0, nbad)
+bad = where(ss.specphot.spzeropoint.value lt -0.999d0 or ss.specphot.spzeropoint.value gt 999d0, nbad)
+if nbad gt 0 then begin
+   if ss.debug or ss.verbose then printandlog, 'spectrophotometry zero point is bad (' + strtrim(ss.specphot[bad].spzeropoint.value,2) + ')', ss.logname
    return, !values.d_infinity
 endif
 
@@ -278,7 +337,7 @@ if ss.nastrom gt 0 then begin
       if ss.debug or ss.verbose then printandlog, 'astrometry error scale is bad (' + strtrim(ss.astrom[bad].errscale.value,2) + ')', ss.logname
       return, !values.d_infinity
    endif
-   
+
    ;; 0 <= ra+raoffset <= 360
    bad = where(ss.star[ss.astrom.starndx].ra.value + ss.astrom.raoffset.value lt 0 or ss.star[ss.astrom.starndx].ra.value + ss.astrom.raoffset.value gt 360,nbad)
    if nbad gt 0 then begin
@@ -298,7 +357,7 @@ if ss.nastrom gt 0 then begin
       if ss.debug or ss.verbose then printandlog, 'pmra is bad (' + strtrim(ss.star[ss.astrom.starndx].pmra.value,2) + ')', ss.logname
       return, !values.d_infinity
    endif
-   
+
    ;; -20000 <= pmdec <= 20000 (2x barnard's star)
    if abs(ss.star[ss.astrom.starndx].pmdec.value) gt 2d4 then begin
       if ss.debug or ss.verbose then printandlog, 'pmdec is bad (' + strtrim(ss.star[ss.astrom.starndx].pmdec.value,2) + ')', ss.logname
@@ -320,20 +379,20 @@ if nbad gt 0 then begin
    return, !values.d_infinity
 endif
 
-;; require planets to stay in the same order as they start
-if ss.nplanets gt 0 then begin
-   if max(abs(ss.planetorder - sort(ss.planet.logp.value))) ne 0 then begin
-      if keyword_set(verbose) then printandlog, 'Planets must remain in the original order! Rejecting step', logname
-      return, !values.d_infinity
-   endif
-endif
-
 ;; limit range of alpha abundance (not used yet)
 ;bad = where(ss.star.alpha.value lt -0.3d0 or ss.star.alpha.value gt 0.7d0,nbad) 
 ;if nbad gt 0 then begin
 ;   if ss.debug or ss.verbose then printandlog, 'alpha is bad (' + strtrim(ss.star[bad].alpha.value,2) + ')', ss.logname
 ;   return, !values.d_infinity
 ;endif
+
+;; require planets to stay in the same order as they start
+if ss.nplanets gt 0 then begin
+   if max(abs(ss.planetorder - sort(ss.planet.logp.value))) ne 0 then begin
+      if keyword_set(ss.verbose) then printandlog, 'Planets must remain in the original order! Rejecting step', logname
+      return, !values.d_infinity
+   endif
+endif
 
 ;; **** Now place additional physical constraints on derived parameters ****
 
@@ -366,19 +425,23 @@ endif
 ;; no transit and we're fitting a transit! This causes major
 ;; problems; exclude this model (but this biases the significance of
 ;; the detection)
-bad = where(ss.planet.fittran and ss.planet.b.value gt (1d0+ss.planet.p.value), nbad)
-
-;; note: this still allows eccentric solutions with only secondary eclipses!
-;; these should be excluded with the rejectflattransit input
-;bad = where(ss.planet.fittran and ss.planet.b.value gt (1d0+ss.planet.p.value) and ss.planet.bs.value gt (1d0+ss.planet.p.value), nbad)
+bad = where(~ss.noprimary and ss.fittran and ss.planet.b.value gt (1d0+ss.planet.p.value), nbad)
 if nbad ne 0L then begin
-   if ss.verbose then printandlog, 'Planet ' + strtrim(bad,2) + ' does not transit!', ss.logname
+   if ss.verbose then printandlog, 'Planet ' + strtrim(bad,2) + ' has no primary transit!', ss.logname
+   return, !values.d_infinity
+endif
+
+bad = where(ss.requiresecondary and ss.planet.bs.value gt (1d0+ss.planet.p.value), nbad)
+if nbad ne 0L then begin
+   if ss.verbose then printandlog, 'Planet ' + strtrim(bad,2) + ' has no secondary eclipse!', ss.logname
    return, !values.d_infinity
 endif
 
 ;; for multi-planet systems, make sure they don't enter each other's hill spheres
 ;; if mp unknown, mp=0 => hill radius=0 => planets can't cross orbits
-;; **** ignores mutual inclination; a priori excludes systems like Neptune and Pluto!! ****
+;; **** ignores mutual inclination; a priori excludes systems like
+;; Neptune and Pluto!! ****
+
 if ~ss.alloworbitcrossing then begin
    mindist = dblarr(ss.nplanets>1)
    maxdist = dblarr(ss.nplanets>1)
@@ -466,6 +529,58 @@ for i=0L, n_elements(*ss.priors)-1 do begin
       upperbound = prior.upperbound
    endelse
    
+   ;; if it's a (periodic) time, make sure we propagate to the right epoch
+   if prior.name eq 'tc' then begin
+      period = ss.(prior.map[0])[prior.map[1]].period[prior.map[3]].value
+      time0 = ss.(prior.map[0])[prior.map[1]].tc[prior.map[3]].value
+      nper = round((prior_value-time0)/period)
+      prior_value = prior_value + nper*period
+      upperbound = upperbound + nper*period
+      lowerbound = lowerbound + nper*period
+   endif else if prior.name eq 'tt' then begin
+      period = ss.(prior.map[0])[prior.map[1]].period[prior.map[3]].value
+      time0 = ss.(prior.map[0])[prior.map[1]].tt[prior.map[3]].value
+      nper = round((prior_value-time0)/period)
+      prior_value = prior_value + nper*period
+      upperbound = upperbound + nper*period
+      lowerbound = lowerbound + nper*period
+   endif else if prior.name eq 'ts' then begin
+      period = ss.(prior.map[0])[prior.map[1]].period[prior.map[3]].value
+      time0 = ss.(prior.map[0])[prior.map[1]].ts[prior.map[3]].value
+      nper = round((prior_value-time0)/period)
+      prior_value = prior_value + nper*period
+      upperbound = upperbound + nper*period
+      lowerbound = lowerbound + nper*period
+   endif else if prior.name eq 't0' then begin
+      period = ss.(prior.map[0])[prior.map[1]].period[prior.map[3]].value
+      time0 = ss.(prior.map[0])[prior.map[1]].t0[prior.map[3]].value
+      nper = round((prior_value-time0)/period)
+      prior_value = prior_value + nper*period
+      upperbound = upperbound + nper*period
+      lowerbound = lowerbound + nper*period
+   endif else if prior.name eq 'tp' then begin
+      period = ss.(prior.map[0])[prior.map[1]].period[prior.map[3]].value
+      time0 = ss.(prior.map[0])[prior.map[1]].tp[prior.map[3]].value
+      nper = round((prior_value-time0)/period)
+      prior_value = prior_value + nper*period
+      upperbound = upperbound + nper*period
+      lowerbound = lowerbound + nper*period
+   endif else if prior.name eq 'td' then begin
+      period = ss.(prior.map[0])[prior.map[1]].period[prior.map[3]].value
+      time0 = ss.(prior.map[0])[prior.map[1]].td[prior.map[3]].value
+      nper = round((prior_value-time0)/period)
+      prior_value = prior_value + nper*period
+      upperbound = upperbound + nper*period
+      lowerbound = lowerbound + nper*period
+   endif else if prior.name eq 'ta' then begin
+      period = ss.(prior.map[0])[prior.map[1]].period[prior.map[3]].value
+      time0 = ss.(prior.map[0])[prior.map[1]].ta[prior.map[3]].value
+      nper = round((prior_value-time0)/period)
+      prior_value = prior_value + nper*period
+      upperbound = upperbound + nper*period
+      lowerbound = lowerbound + nper*period
+   endif 
+
    if model_value gt upperbound or model_value lt lowerbound then begin
       if ss.debug or ss.verbose then $
          printandlog, label + '( ' + strtrim(model_value,2) + ') is out of user-defined bounds (' +$
@@ -475,44 +590,6 @@ for i=0L, n_elements(*ss.priors)-1 do begin
 
    ;; no gaussian prior, skip
    if prior.gaussian_width le 0d0 then continue
-
-   ;; if it's a (periodic) time, make sure we propagate to the right epoch
-   if prior.name eq 'tc' then begin
-      period = ss.(prior.map[0])[prior.map[1]].period[prior.map[3]].value
-      time0 = ss.(prior.map[0])[prior.map[1]].tc[prior.map[3]].value
-      nper = round((prior_value-time0)/period)
-      prior_value = prior_value + nper*period
-   endif else if prior.name eq 'tt' then begin
-      period = ss.(prior.map[0])[prior.map[1]].period[prior.map[3]].value
-      time0 = ss.(prior.map[0])[prior.map[1]].tt[prior.map[3]].value
-      nper = round((prior_value-time0)/period)
-      prior_value = prior_value + nper*period
-   endif else if prior.name eq 'ts' then begin
-      period = ss.(prior.map[0])[prior.map[1]].period[prior.map[3]].value
-      time0 = ss.(prior.map[0])[prior.map[1]].ts[prior.map[3]].value
-      nper = round((prior_value-time0)/period)
-      prior_value = prior_value + nper*period
-   endif else if prior.name eq 't0' then begin
-      period = ss.(prior.map[0])[prior.map[1]].period[prior.map[3]].value
-      time0 = ss.(prior.map[0])[prior.map[1]].t0[prior.map[3]].value
-      nper = round((prior_value-time0)/period)
-      prior_value = prior_value + nper*period
-   endif else if prior.name eq 'tp' then begin
-      period = ss.(prior.map[0])[prior.map[1]].period[prior.map[3]].value
-      time0 = ss.(prior.map[0])[prior.map[1]].tp[prior.map[3]].value
-      nper = round((prior_value-time0)/period)
-      prior_value = prior_value + nper*period
-   endif else if prior.name eq 'td' then begin
-      period = ss.(prior.map[0])[prior.map[1]].period[prior.map[3]].value
-      time0 = ss.(prior.map[0])[prior.map[1]].td[prior.map[3]].value
-      nper = round((prior_value-time0)/period)
-      prior_value = prior_value + nper*period
-   endif else if prior.name eq 'ta' then begin
-      period = ss.(prior.map[0])[prior.map[1]].period[prior.map[3]].value
-      time0 = ss.(prior.map[0])[prior.map[1]].ta[prior.map[3]].value
-      nper = round((prior_value-time0)/period)
-      prior_value = prior_value + nper*period
-   endif 
 
    ;; if it's an angular parameter, make sure we handle the boundary
    if unit eq 'RADIANS' then begin
@@ -525,7 +602,8 @@ for i=0L, n_elements(*ss.priors)-1 do begin
 
    ;; output debugging info if requested
    if ss.verbose then begin
-      str = string(label,priorchi2, format='(a," penalty = ",f0.6)')
+      str = string(label,priorchi2,model_value,prior_value,prior.gaussian_width, $
+                   format='(a," penalty = ",f0.6," (model value=",f0.6,", prior value=",f0.6,", gaussian width=",f0.6,")")')
       printandlog, str, ss.logname
    endif
 
@@ -717,7 +795,6 @@ for i=0L, ss.nstars-1 do begin
          if nmatch gt 1 and match[0] eq i then begin
             isoname = psname + '.mistiso.' +string(i,format='(i03)') + '.eps'
             plotisochrone, ss.star[i].age.value, ss.star[i].initfeh.value,$
-                           xrange=[10000,4000],yrange=[4.5,3],$
                            mstar=ss.star[match].mstar.value,$
                            teff=ss.star[match].teff.value,$
                            rstar=ss.star[match].rstar.value,$
@@ -855,7 +932,9 @@ if file_test(ss.mistsedfile) or file_test(ss.fluxfile) or file_test(ss.sedfile) 
                                   ss.sedfile, rstar=ss.star.rstarsed.value,$
                                   debug=ss.debug, psname=epsname,$
                                   range=ss.sedrange,specphotpath=ss.specphotpath, $
-                                  sperrscale=ss.specphot.sperrscale.value, derivethermal=ss.derivethermal)
+                                  sperrscale=ss.specphot.sperrscale.value,$
+                                  spzeropoint=ss.specphot.spzeropoint.value, derivethermal=ss.derivethermal)
+
       sedchi2 += sedarr[0]
       
       if keyword_set(ss.derivethermal) then begin
@@ -866,7 +945,7 @@ if file_test(ss.mistsedfile) or file_test(ss.fluxfile) or file_test(ss.sedfile) 
 	        ;stop
          endif
       endif
-                                  
+
    endif else begin
       ;; Keivan Stassun's SED
       junk = exofast_sed(ss.star.fluxfile, teffsed, $
@@ -1128,7 +1207,7 @@ for i=0, ss.ndt-1 do begin
                          ss.star[starndx].vsini.value/1d3,$
                          ss.star[starndx].vline.value/1d3,$
                          ss.doptom[i].dtscale.value, debug=ss.debug,$
-                         /like,psname=epsname,$
+                         /like,psname=epsname,c=ss.constants.c/1e5,$
                          verbose=ss.verbose, logname=ss.logname)
 
    if ~finite(dtchi2) then begin
@@ -1158,26 +1237,25 @@ for j=0L, ss.ntran-1 do begin
 
    transit = *(ss.transit[j].transitptrs)
    
-;   if keyword_set(ss.trim_computation_window) then begin      
-;      phase = exofast_mod(transit.bjd - ss.planet[i].tc.value, ss.planet[i].period.value)
-;      compute = where(abs(phase-ss.planet[i].period.value/2d0) lt (ss.planet[i].t14.value*1.05d0),complement=ignore)
-;   endif
-
-;   if ss.transit[j].dilute.fit then begin
    if ss.fitdilute[j] then begin
 
+      matchstar = where(ss.seddeblend[j,*])
       ;; dilute transit according to other stars' SEDs
-      if ss.nstars gt 1 then begin
+      if ss.nstars gt 1 and (matchstar[0] ne -1) then begin
          matchband = (where(*ss.dilutebandndx eq ss.transit[j].bandndx))[0]
-         matchstar = where(ss.diluted[j,*])
          planetndx = ss.transit[j].pndx
          starndx = ss.planet[planetndx].starndx
          dilute = 1d0-starflux[matchband,starndx]/total(starflux[matchband,matchstar])      
-;      print, ss.band[ss.transit[j].bandndx].name, dilute
-         chi2 += ((ss.transit[j].dilute.value - dilute)/(dilute*0.1d0))^2   
+         dilutechi2 = ((ss.transit[j].dilute.value - dilute)/(dilute*0.05d0))^2   
+         chi2 += dilutechi2
+
+         if ss.verbose then begin
+            name = ss.band[ss.transit[j].bandndx].name
+            printandlog, "SED " + name + " model dilution = " + strtrim(dilute,2) + ', dilution parameter: ' + strtrim(ss.transit[j].dilute.value,2),ss.logname
+            printandlog, "SED " + name + " deblending penalty: " + strtrim(dilutechi2,2), ss.logname
+         endif
       endif else begin
          ;; otherwise, let it float (constrained by priors/other bands)
-;         print, 'here ', j
       endelse
    endif
 
@@ -1294,6 +1372,27 @@ for j=0L, ss.ntran-1 do begin
    modelflux *= (ss.transit[j].f0.value + $
                  total(transit.detrendmult*(replicate(1d0,n_elements(transit.bjd))##transit.detrendmultpars.value),1))
 
+   ;; exponential ramp (e.g., Spitzer & JWST)
+   if ss.transit[j].fitramp then begin
+      ramp_profile = (1d0+ss.transit[j].rampamp.value*exp((transit.bjd[0]-transit.bjd)/ss.transit[j].rampexp.value)) 
+
+      ;; A*exp(-t/tau) ~ A*(1-t/tau + t/tau^2/2 + ...)
+      ;; The leading term of the ramp looks a lot like F0. 
+      ;; Subtract A to reduce covariance with F0
+      ramp_profile -= ss.transit[j].rampamp.value 
+
+      ;; The second order term of the ramp looks a lot like time decorrelation. Subtract?
+;      ramp_profile -= ss.transit[j].rampamp.value*(transit.bjd[0]-transit.bjd)/ss.transit[j].rampexp.value) ;; this term has a near-perfect correlation with time
+
+      ;; The third order term of the ramp looks a lot like time^2 decorrelation. Subtract?
+;      ramp_profile -= ss.transit[j].rampamp.value*(transit.bjd[0]-transit.bjd)/(ss.transit[j].rampexp.value)^2*2d0) ;; this term has a near-perfect correlation with time^2
+
+      bad = where(~finite(ramp_profile),nbad)
+      if nbad gt 0 then print, ss.transit[j].rampamp.value, ss.transit[j].rampexp.value
+      modelflux *= ramp_profile
+   endif
+   
+
    ;; fit Andrew Vanderburg's keplerspline to the residuals to detrend the lightcurve
    if ss.transit[j].fitspline then begin
       if transit.breakpts[0] eq -1 then $         
@@ -1340,7 +1439,10 @@ if toolow[0] ne -1 then phase[toohigh] += ss.planet[0].period.value
       
    endif
 
-   if ~finite(transitchi2) then stop
+   if ~finite(transitchi2) then begin
+      printandlog, 'the transit model likelihood is not finite. this should not happen. please inspect input files'
+      stop
+   endif
 
    chi2 += transitchi2
    if ss.verbose then printandlog, ss.transit[j].label + ' transit penalty: ' + strtrim(transitchi2,2) + ' ' + strtrim(ss.transit[j].variance.value,2),ss.logname
@@ -1445,7 +1547,7 @@ for i=0L, ss.nplanets-1L do begin
          LOADCT, 39,/silent
          colors = [0,254,159,95,223,31,207,111,191,47]
          charsizelegend = 0.09
-         xlegend = 0.1
+      f   xlegend = 0.1
          ylegend = 0.90
          charsize = 0.5
       endif else begin

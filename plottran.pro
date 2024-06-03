@@ -5,6 +5,8 @@ if n_elements(savfile) ne 0 then begin
    ss = mcmcss
 endif
 
+if n_elements(range) eq 0 then range = dblarr(6)+!values.d_nan
+
 ;; pick the best-fit index if not specified
 if n_elements(ndx) eq 0 then begin
    if ss.nsteps eq 1 then ndx = 0 $
@@ -84,6 +86,7 @@ t14s = period/!dpi*asin(sqrt((1d0+p)^2 - bs^2)/(sini*ar))*$
 ;; depth for each band in each transit
 noise = dblarr(ss.ntran)
 bandnames = strarr(ss.ntran)
+latexnames = strarr(ss.ntran)
 depth = dblarr(ss.nplanets, ss.ntran)
 depth2 = dblarr(ss.nplanets, ss.ntran)
 primary = bytarr(ss.nplanets, ss.ntran)
@@ -95,6 +98,7 @@ for i=0L, ss.nplanets-1 do begin
    for j=0L, ss.ntran-1 do begin
       band = ss.band[ss.transit[j].bandndx] 
       bandnames[j] = band.name
+      latexnames[j] = band.latex
       depth2[i,j] = band.thermal.value[ndx]/1d6
 
       if band.reflect.fit then phasecurve[i,j] = 1B
@@ -126,6 +130,11 @@ for i=0L, ss.nplanets-1 do begin
             match1 = where(thisbjd gt (tc[i] + epochs[k]*period[i] - t14[i]) and $
                            thisbjd lt (tc[i] + epochs[k]*period[i] + t14[i]))
             if match1[0] ne -1 then primary[i,j] = 1B
+         endfor
+
+         ;; same for secondaries
+         epochs = minepoch + lindgen(maxepoch-minepoch+1)
+         for k=0L, n_elements(epochs)-1 do begin
             match2 = where(thisbjd gt (ts[i] + epochs[k]*period[i] - t14s[i]) and $
                            thisbjd lt (ts[i] + epochs[k]*period[i] + t14s[i]))
             if match2[0] ne -1 then secondary[i,j] = 1B
@@ -329,7 +338,6 @@ for jj=0L, 1 do begin
       ysize = xsize/aspect_ratio + (nlc-1)
 ;      ysize = xsize/aspect_ratio + (ss.ntran-1)*0.6
 
-      
       ;; this is a planet specific quantity
       spacing = (max(delta[i,use])+max(noise[use]))*3d0
       if ~keyword_set(noresiduals) then spacing *= 4d0/3d0
@@ -513,6 +521,9 @@ for jj=0L, 2 do begin
       sorted = sort(bandnames[match])
       sortband = (bandnames[match])[sorted]
       uniqbands = sortband[uniq(sortband)]
+      sortlatex = (latexnames[match])[sorted]
+      uniqlatexbands = sortlatex[uniq(sortlatex)]
+
       for kk=0L, n_elements(uniqbands)-1 do begin
          
          ;; get the right windows/page numbers
@@ -580,7 +591,7 @@ for jj=0L, 2 do begin
          ;; plot the shell, phased model, and phased data
          ;; this plot may have some wiggles in it because of the
          ;; different ld parameters between transits
-         plotbandname = uniqbands[kk]
+         plotbandname = exofast_textoidl(uniqlatexbands[kk])
          if strpos(plotbandname,'Sloan') ne -1 then $
             plotbandname = (strsplit(plotbandname,'Sloan',/regex,/extract))[0] + "'"
          

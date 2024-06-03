@@ -34,15 +34,18 @@ allowedbands = ['U','B','V','R','I','J','H','K',$
                 'u','b','v','y']
 
 if keyword_set(skipallowed) then begin
-   bandstr = strjoin(strsplit(band,'_',/regex,/extract),'.') 
+   bandstr = strjoin(strsplit(band,'_',/regex,/extract),'.')
+   ;; trim leading zeros
+   while strpos(bandstr,'0') eq 0 do bandstr = strmid(bandstr,1)
+   
+   ;; if it's a valid number, then it's interpreted as a wavelength in microns
    if valid_num(bandstr) then begin
       wavelength = double(bandstr)
-      band = bandstr + textoidl(' \mu m')
+      bandname = bandstr + '\mum'
    endif
 endif else begin
    if (where(allowedbands eq band))[0] eq -1 then message, 'Filter (' + band + ') not allowed'
 endelse
-
 
 line = ""
 openr, lun, filename, /get_lun
@@ -182,18 +185,20 @@ residuals = flux*0d0
 model = flux*0d0
 ;model = (flux*0d0)#replicate(1d0,nplanets+1)
 
-span = (max(bjd)+1d0 - (min(bjd)-1d0))
+maxbjd = max(bjd,min=minbjd)
+span = (maxbjd+1d0) - (minbjd-1d0)
 npretty = span*1440d0/5d0
-prettytime = min(bjd) - 1d0 + dindgen(npretty)/(npretty-1)*span
+prettytime = minbjd - 1d0 + dindgen(npretty)/(npretty-1)*span
 ;prettytime = replicate(min(bjd) - 1d0 + dindgen(npretty)/(npretty-1)*span,nplanets+1)
 prettymodel = prettytime*0d0
 
 night = strmid(basename,1,4)+'-'+strmid(basename,5,2)+'-'+strmid(basename,7,2)
 label = (strsplit(basename,'.',/extract))(2) + ' UT ' + night + ' ('+ bandname + ')'
 
-transit=create_struct('bjd',bjd,'flux',flux,'err',err,'band',band,'ndx',0,$
-                      'epoch',0.0,'detrendadd',da,'detrendmult',dm,'label',$
-                      label,'nadd',nadd,'nmult',nmult,$
+transit=create_struct('bjd',bjd,'flux',flux,'err',err,'band',band,'bandstr',bandname, 'ndx',0,$
+                      'epoch',0.0,'detrendadd',da,'detrendmult',dm,'label',label,$
+                      'minbjd',minbjd,'maxbjd',maxbjd,'timerange',maxbjd-minbjd,$
+                      'nadd',nadd,'nmult',nmult,$
                       'residuals',residuals, 'model',model, $
                       'prettytime',prettytime, 'prettymodel',prettymodel,$
                       'detrendaddpars',detrendaddpars, 'detrendmultpars',detrendmultpars, $

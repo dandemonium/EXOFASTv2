@@ -55,8 +55,17 @@ endif else if finite(parameter.priorwidth) then begin
    else upperbound = 'Inf'
    if finite(parameter.lowerbound) then lowerbound = strtrim(parameter.lowerbound,2) $
    else lowerbound = '-Inf'
-   line = label + ' ' + priorval + ' ' + width + ' ' + lowerbound + ' ' + upperbound + ' ' + bestval
 
+   if double(width) lt 0d0 then width = '-1'
+
+   if width eq '-1' and upperbound eq 'Inf' and lowerbound eq '-Inf' then begin
+      line = label + ' ' + bestval
+   endif else if width eq '-1' then begin
+      line = label + ' ' + bestval + ' ' + width + ' ' + lowerbound + ' ' + upperbound
+   endif else begin
+      line = label + ' ' + priorval + ' ' + width + ' ' + lowerbound + ' ' + upperbound + ' ' + bestval
+   endelse
+   
 endif else if finite(parameter.upperbound) or finite(parameter.lowerbound) then begin
    ;; if just bounds were supplied, keep the bounds, but adjust the
    ;; starting value to the best fit value
@@ -165,6 +174,17 @@ for i=0L, mcmcss.nband-1 do begin
    for j=0, n_tags(mcmcss.band[i])-1 do begin
       if (size(mcmcss.band[i].(j)))[2] eq 8 then begin        
          line = getpriorline(mcmcss.band[i].(j), ndx, num=i)
+         if line ne '' then printf, lun, line
+      endif
+   endfor
+endfor
+
+;; spectrophotometry files
+for i=0L, mcmcss.nspecfiles-1 do begin
+   printf, lun, '# ' + mcmcss.specphot[i].label
+   for j=0, n_tags(mcmcss.specphot[i])-1 do begin
+      if (size(mcmcss.specphot[i].(j)))[2] eq 8 then begin        
+         line = getpriorline(mcmcss.specphot[i].(j), ndx, num=i)
          if line ne '' then printf, lun, line
       endif
    endfor

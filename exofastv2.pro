@@ -239,7 +239,7 @@
 ;
 ;                Such a file can be generated given the 2D array of
 ;                fractional flux decrements (DT), a time array
-;                (BJD_TDB) and a velocity array (VEL) like this:
+;                (BJD_TDB) and a velocity array (VEL, in km/s) like this:
 ; 
 ;                writefits,'nYYYYMMDD.pname.instrument.resolution.fits',DT
 ;                writefits,'nYYYYMMDD.pname.instrument.resolution.fits',BJD_TDB, /append
@@ -496,7 +496,7 @@
 ;  STARNDX   - An NPLANETS long array that specifies the index of the
 ;              star each planet orbits. The default is 0 for all.
 ; 
-;  DILUTED   - An NTRANSITSxNSTARS boolean array specifying which
+;  SEDDEBLEND- An NTRANSITSxNSTARS boolean array specifying which
 ;              transits are blended with which stars. These will
 ;              automatically be deblended according to the SED models
 ;              of all stars specified here, assuming an error of 10%.
@@ -690,6 +690,22 @@
 ;             is likely required for low SNR transits or when using
 ;             parallel tempering (see NTEMP and TF).
 ;
+; NOPRIMARY - An NPLANETS byte array specifying which planets are
+;             allowed to not have a primary transit. Normally, b>1+p
+;             models are rejected because the transit fit is
+;             unconstrained and poorly behaved, but in the rare cases
+;             a planet only has a secondary and not a primary, this is
+;             required. You probably also want to specify
+;             REQUIRESECONDARY=NOPRIMARY.
+;
+; REQUIRESECONDARY - 
+;             An NPLANETS byte array specifying which planets are
+;             required to have a secondary eclipse. Models with bs>1+p
+;             will be rejected. When fitting a secondary, this could
+;             bias non-significant detections. When only fitting a
+;             secondary, this may be required to keep the fit
+;             reasonably bounded.
+;
 ;  FITSPLINE- An NTRANSITFILES byte array specifying which transits
 ;             should be flatted with Andrew Vanderburg's
 ;             keplerspline. This should only be used for long baseline
@@ -706,6 +722,15 @@
 ;             inflating the uncertainties, and increasing convergence
 ;             times. It should be short compared to the variability
 ;             you wish to remove.
+;
+;  FITRAMP  - An NTRANSITFILES byte array specifying which transits
+;             should be fit with an exponential ramp (common for JWST
+;             and Spitzer LCs). When set, the corresponding lightcurve
+;             will be multiplied by 1+A*exp((time[0]-time)/tau), where
+;             A and tau (unique to each LC) are fitted parameters
+;             reported alongside other transit parameters and time is
+;             the user-supplied time from the transit file. A is
+;             typically negative.
 ;
 ;  FITWAVELET
 ;           - An NTRANSITFILES array specifying which to fit Carter's
@@ -970,7 +995,7 @@
 ;             unless doing TTVs.
 ;
 ;  USERNOTE - A string that is printed to the top of the log file,
-;             intended to help keep track of fits. 
+;             intended to help the user keep track of fits. 
 ;
 ;  MKSUMMARYPG
 ;           - A keyword that generates a quick look summary page of
@@ -1119,6 +1144,7 @@
 ;             offsets). Now easily extensible.
 ;  2023/12 -- Missed a lot of updates here (see git
 ;             history). Documentation cleanup.
+;  2024/01 -- Add FITRAMP (primarily for JWST transits)
 ;-
 ;  2023/03 -- Dan Stevens (UMD): model Gaia spectrophotometry and write the
 ;             "prettymodel" NextGen atmosphere to file for start/amoeba/mcmc.
@@ -1146,7 +1172,7 @@ pro exofastv2, priorfile=priorfile, $
                fitbeam=fitbeam, derivebeam=derivebeam, $
                ;; star inputs
                nstars=nstars, starndx=starndx, $
-               diluted=diluted, fitdilute=fitdilute, $
+               seddeblend=seddeblend, fitdilute=fitdilute, $
                ;; planet inputs
                nplanets=nplanets, $
                fittran=fittran, fitrv=fitrv, $ 
@@ -1155,14 +1181,15 @@ pro exofastv2, priorfile=priorfile, $
                alloworbitcrossing=alloworbitcrossing, $
                chen=chen, i180=i180, $
                ;; RV inputs
-               fitslope=fitslope, fitquad=fitquad, rvepoch=rvepoch,$               
+               fitslope=fitslope, fitquad=fitquad, rvepoch=rvepoch,$
                ;; transit inputs
                noclaret=noclaret, $
                ttvs=ttvs, tivs=tivs, tdeltavs=tdeltavs,$
                longcadence=longcadence, exptime=exptime, ninterp=ninterp, $
                rejectflatmodel=rejectflatmodel,$
+               noprimary=noprimary, requiresecondary=requiresecondary,$
                fitspline=fitspline, splinespace=splinespace, $
-               fitwavelet=fitwavelet, $
+               fitramp=fitramp, fitwavelet=fitwavelet, $
                ;; reparameterization inputs
                fitlogmp=fitlogmp,$
                novcve=novcve, nochord=nochord, fitsign=fitsign, $
@@ -1219,7 +1246,7 @@ if lmgr(/vm) or lmgr(/runtime) then begin
              fitreflect=fitreflect, fitphase=fitphase, $
              fitbeam=fitbeam, derivebeam=derivebeam, $
              nstars=nstars,starndx=starndx, $
-             diluted=diluted,fitdilute=fitdilute, $
+             seddeblend=seddeblend,fitdilute=fitdilute, $
              nplanets=nplanets, $
              fittran=fittran, fitrv=fitrv, $
              rossiter=rossiter, fitdt=fitdt, $
@@ -1231,8 +1258,9 @@ if lmgr(/vm) or lmgr(/runtime) then begin
              ttvs=ttvs, tivs=tivs, tdeltavs=tdeltavs, $
              longcadence=longcadence, exptime=exptime, ninterp=ninterp, $
              rejectflatmodel=rejectflatmodel,$
+             noprimary=noprimary, requiresecondary=requiresecondary,$
              fitspline=fitspline, splinespace=splinespace, $
-             fitwavelet=fitwavelet, $              
+             fitramp=fitramp, fitwavelet=fitwavelet, $              
              fitlogmp=fitlogmp,$
              novcve=novcve, nochord=nochord, fitsign=fitsign, $
              fittt=fittt, earth=earth, $             
@@ -1278,7 +1306,7 @@ endif else if n_elements(nthreads) ne 1 then begin
 endif ;; else use the user's input   
 
 if double(!version.release) ge 6.4d0 and ~lmgr(/vm) and ~lmgr(/runtime) and ~runninggdl then $
-   resolve_all, resolve_function=[chi2func,'exofast_random'],skip_routines=['cggreek'],/cont,/quiet
+   resolve_all, resolve_either=[chi2func,'exofast_random','ramp_func'],skip_routines=['cggreek'],/cont,/quiet
 
 ;; output to log file too
 logname = prefix + 'log'
@@ -1365,7 +1393,7 @@ ss = mkss(priorfile=priorfile, $
           fitbeam=fitbeam, derivebeam=derivebeam, $
           ;; star inputs
           nstars=nstars, starndx=starndx, $
-          diluted=diluted, fitdilute=fitdilute, $
+          seddeblend=seddeblend, fitdilute=fitdilute, $
           ;; planet inputs
           nplanets=nplanets, $
           fittran=fittran,fitrv=fitrv,$ 
@@ -1380,8 +1408,9 @@ ss = mkss(priorfile=priorfile, $
           ttvs=ttvs, tivs=tivs, tdeltavs=tdeltavs, $
           longcadence=longcadence, exptime=exptime, ninterp=ninterp, $
           rejectflatmodel=rejectflatmodel,$
+          noprimary=noprimary, requiresecondary=requiresecondary,$
           fitspline=fitspline, splinespace=splinespace, $
-          fitwavelet=fitwavelet, $            
+          fitramp=fitramp, fitwavelet=fitwavelet, $            
           ;; reparameterization inputs
           fitlogmp=fitlogmp,$
           novcve=novcve, nochord=nochord, fitsign=fitsign, $
@@ -1403,7 +1432,122 @@ endif else badstart=0
 npars = ss.npars
 nfit = n_elements((*(ss.tofit))[0,*])
 
-;; this is where threads were previously initialized
+if nthreads gt 1 then begin
+   ;; load the stellar structure into the common block for each thread
+   ;; (can't pass structures between threads, so we have to create it in each thread)
+   thread_array = replicate(create_struct('obridge',obj_new("IDL_IDLBridge", output=''),$
+                                          'j',-1L, 'm',-1L, 'k', -1L, $
+                                          'newpars',dblarr(nfit),'status',0B, 'fac', 1d0,$
+                                          'start', systime(/seconds)),nthreads)
+   
+   ;; get the current working directory (make sure all threads start there)
+   cd, current=cwd
+
+   for i=0L, nthreads-1 do begin
+      ;; replicate copies the IDLBridge by reference, not by value!! reinitialize here
+      thread_array[i].obridge = obj_new("IDL_IDLBridge", output='')
+      
+      ;; can't share a structure directly with a thread
+      ;; must share components and create the structure within the thread
+      ;; share every variable in memory to make it future proof
+      help, output=helpoutput
+      for j=0L, n_elements(helpoutput)-2 do begin
+         ;; done with variables, we're done
+         if helpoutput[j] eq 'Compiled Procedures:' then break
+         
+         ;; undefined variable; skip it
+         if strpos(helpoutput[j],'UNDEFINED') eq 16 then continue
+
+         entries = strsplit(helpoutput[j],/extract)
+
+         ;; either a long variable name that spans two lines, or not a variable
+         if strpos(helpoutput[j],'=') ne 26 then begin
+
+            ;; not a variable; skip it
+            if strpos(helpoutput[j+1],'=') ne 26 then continue
+
+            ;; undefined variable, skip it
+            if strpos(helpoutput[j+1],'UNDEFINED') eq 16 then continue
+
+            ;; if it's not a lone (long) variable name, skip it
+            if n_elements(entries) ne 1 then continue
+
+            ;; this line is the name of a long variable name
+            ;; skip the next line, which is its value
+            j++
+
+         endif else if n_elements(entries) gt 4 then begin
+            ;; catch N-dimentional arrays and strings with spaces
+            if strpos(helpoutput[j],'Array') ne 28 and strpos(helpoutput[j],'STRING') ne 16 then continue
+         endif else if n_elements(entries) ne 4 then continue            
+         ;; declare it in the thread
+         ;; EXECUTE is ok here, since we can't use VM with IDLBridge anyway
+         varname = entries[0]
+         junk = execute("thread_array[i].obridge->setvar,'" + varname + "'," + varname)
+;         print, 'setting ' + varname + ' to '
+;         junk = execute('print, ' + strtrim(varname,2))
+      endfor
+
+      ;; disable NaN warnings inside each thread
+      thread_array[i].obridge->setvar,'!except',0
+
+      ;; make sure each thread is run from the current working directory
+      thread_array[i].obridge->setvar,'cwd',cwd
+      thread_array[i].obridge->execute,'cd, cwd'
+      
+      ;; compile all the codes in each thread so compilation messages don't pollute the screen
+      if double(!version.release) ge 6.4d0 and ~lmgr(/vm) and ~lmgr(/runtime) and ~runninggdl then $
+         thread_array[i].obridge->execute, "resolve_all, resolve_function=[chi2func,'exofast_random'], resolve_procedure=['exofastv2'],skip_routines=['cggreek'],/cont,/quiet"
+
+
+;      print, thread_array[i].obridge->getvar('rvpath')
+;      print, thread_array[i].obridge->getvar('tranpath')
+;      print, thread_array[i].obridge->getvar('astrompath')
+;      print, thread_array[i].obridge->getvar('fbolsedfloor')
+         
+      ;; create the stellar stucture within each thread
+      thread_array[i].obridge->execute,$
+         'ss = mkss(priorfile=priorfile, prefix=prefix,'+$
+         'rvpath=rvpath, tranpath=tranpath,'+$ ;sb2path=sb2path
+         'astrompath=astrompath, dtpath=dtpath,'+$
+         'fluxfile=fluxfile, mistsedfile=mistsedfile,'+$
+         'sedfile=sedfile,specphotpath=specphotpath,'+$
+         'noavprior=noavprior,'+$
+         'fbolsedfloor=fbolsedfloor,teffsedfloor=teffsedfloor,'+$
+         'fehsedfloor=fehsedfloor, oned=oned,'+$
+         'yy=yy, nomist=nomist, parsec=parsec,'+ $
+         'torres=torres, mannrad=mannrad, mannmass=mannmass,'+$         
+         'teffemfloor=teffemfloor, fehemfloor=fehemfloor,'+$
+         'rstaremfloor=rstaremfloor,ageemfloor=ageemfloor,'+$
+         'fitthermal=fitthermal, fitellip=fitellip,'+ $
+         'fitreflect=fitreflect,fitphase=fitphase,'+ $
+         'fitbeam=fitbeam, derivebeam=derivebeam,'+ $
+         'nstars=nstars,starndx=starndx,'+ $         
+         'diluted=diluted, fitdilute=fitdilute,'+$
+         'nplanets=nplanets,'+$
+         'fittran=fittran, fitrv=fitrv,'+$ ; fitsb2=fitsb2
+         'rossiter=rossiter,fitdt=fitdt,'+$
+         'circular=circular,tides=tides,'+$
+         'alloworbitcrossing=alloworbitcrossing,'+$
+         'chen=chen, i180=i180,'+$
+         'fitslope=fitslope, fitquad=fitquad,rvepoch=rvepoch,'+$
+         'noclaret=noclaret,'+$
+         'ttvs=ttvs, tivs=tivs, tdeltavs=tdeltavs,'+$
+         'longcadence=longcadence,exptime=exptime,ninterp=ninterp,'+$ 
+         'rejectflatmodel=rejectflatmodel,'+$
+         'fitspline=fitspline, splinespace=splinespace,'+$
+         'fitwavelet=fitwavelet,'+$
+         'fitlogmp=fitlogmp,'+$
+         'novcve=novcve, nochord=nochord, fitsign=fitsign,'+$
+         'fittt=fittt, earth=earth,'+$
+         'transitrange=transitrange,rvrange=rvrange,'+$
+         'sedrange=sedrange,emrange=emrange,'+$
+         'debug=debug, verbose=verbose,delay=delay,'+$
+         '/silent,'+$
+         'chi2func=chi2func,'+$
+         'logname=logname, derivethermal=derivethermal)'
+   endfor
+endif
 
 if n_elements(mintz) eq 0 then mintz = 1000d0
 if n_elements(maxgr) eq 0 then maxgr = 1.01d0
@@ -1442,7 +1586,9 @@ pars = str2pars(ss,scale=scale,name=name, angular=angular)
 
 ;; plot the data + starting guess
 modelfile = prefix + 'start'
+ss.verbose=1B
 bestchi2 = call_function(chi2func, pars, psname=modelfile)
+ss.verbose = keyword_set(verbose)
 if ~finite(bestchi2) then begin
    printandlog, 'Starting model is out of bounds; cannot recover. You must change the starting parameter(s) via the prior file.', logname
    printandlog, 'Re-running starting model with /VERBOSE flag to identify the parameter', logname
@@ -1499,6 +1645,7 @@ printandlog, 'Beginning AMOEBA fit; this may take up to ' + string(modeltime*nma
 ss.amoeba = 1B
 ss.delay =0
 best = exofast_amoeba(1d-5,function_name=chi2func,p0=pars,scale=scale,nmax=nmax)
+
 ss.delay = delay
 if best[0] eq -1 then begin
    printandlog, 'ERROR: Could not find best combined fit; adjust your starting values and try again. You may want to set the /DEBUG keyword.', logname
@@ -1518,7 +1665,6 @@ save, best, filename=prefix + 'amoeba.idl'
 
 ;; output the best-fit model fluxes/rvs
 bestchi2 = call_function(chi2func,best,modelrv=modelrv,modelflux=modelflux, psname=prefix + 'amoeba')
-
 printandlog, 'The best loglike found by AMOEBA was ' + strtrim(-bestchi2/2d0,2), logname
 printandlog, 'It should only be compared against the loglike of the same model with different starting points', logname
 
@@ -1590,7 +1736,7 @@ if nthreads gt 1 then begin
       
       ;; compile all the codes in each thread so compilation messages don't pollute the screen
       if double(!version.release) ge 6.4d0 and ~lmgr(/vm) and ~lmgr(/runtime) and ~runninggdl then $
-         thread_array[i].obridge->execute, "resolve_all, resolve_function=[chi2func,'exofast_random'], resolve_procedure=['exofastv2'],skip_routines=['cggreek'],/cont,/quiet"
+         thread_array[i].obridge->execute, "resolve_all, resolve_either=[chi2func,'exofast_random','ramp_func'], resolve_procedure=['exofastv2'],skip_routines=['cggreek'],/cont,/quiet"
          
       ;; create the stellar stucture within each thread
       thread_array[i].obridge->execute,$
@@ -1610,7 +1756,7 @@ if nthreads gt 1 then begin
          'fitreflect=fitreflect,fitphase=fitphase,'+ $
          'fitbeam=fitbeam, derivebeam=derivebeam,'+ $
          'nstars=nstars,starndx=starndx,'+ $         
-         'diluted=diluted, fitdilute=fitdilute,'+$
+         'seddeblend=seddeblend, fitdilute=fitdilute,'+$
          'nplanets=nplanets,'+$
          'fittran=fittran, fitrv=fitrv,'+$
          'rossiter=rossiter,fitdt=fitdt,'+$
@@ -1622,8 +1768,9 @@ if nthreads gt 1 then begin
          'ttvs=ttvs, tivs=tivs, tdeltavs=tdeltavs,'+$
          'longcadence=longcadence,exptime=exptime,ninterp=ninterp,'+$ 
          'rejectflatmodel=rejectflatmodel,'+$
+         'noprimary=noprimary, requiresecondary=requiresecondary,'+$
          'fitspline=fitspline, splinespace=splinespace,'+$
-         'fitwavelet=fitwavelet,'+$
+         'fitramp=fitramp, fitwavelet=fitwavelet,'+$
          'fitlogmp=fitlogmp,'+$
          'novcve=novcve, nochord=nochord, fitsign=fitsign,'+$
          'fittt=fittt, earth=earth,'+$
@@ -1725,7 +1872,7 @@ mcmcss = mkss(priorfile=priorfile, $
               fitbeam=fitbeam, derivebeam=derivebeam, $
               ;; star inputs
               nstars=nstars, starndx=starndx, $
-              diluted=diluted, fitdilute=fitdilute, $
+              seddeblend=seddeblend, fitdilute=fitdilute, $
               ;; planet inputs
               nplanets=nplanets, $
               fittran=fittran,fitrv=fitrv,$ 
@@ -1740,8 +1887,9 @@ mcmcss = mkss(priorfile=priorfile, $
               ttvs=ttvs, tivs=tivs, tdeltavs=tdeltavs, $
               longcadence=longcadence, exptime=exptime, ninterp=ninterp, $
               rejectflatmodel=rejectflatmodel,$
+              noprimary=noprimary, requiresecondary=requiresecondary,$
               fitspline=fitspline, splinespace=splinespace, $
-              fitwavelet=fitwavelet, $            
+              fitramp=fitramp, fitwavelet=fitwavelet, $            
               ;; reparameterization inputs
               fitlogmp=fitlogmp,$
               novcve=novcve, nochord=nochord, fitsign=fitsign, $
