@@ -1547,7 +1547,7 @@ for i=0L, ss.nplanets-1L do begin
          LOADCT, 39,/silent
          colors = [0,254,159,95,223,31,207,111,191,47]
          charsizelegend = 0.09
-         xlegend = 0.1
+      f   xlegend = 0.1
          ylegend = 0.90
          charsize = 0.5
       endif else begin

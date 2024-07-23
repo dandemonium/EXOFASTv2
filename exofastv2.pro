@@ -1523,7 +1523,7 @@ if nthreads gt 1 then begin
          'fitreflect=fitreflect,fitphase=fitphase,'+ $
          'fitbeam=fitbeam, derivebeam=derivebeam,'+ $
          'nstars=nstars,starndx=starndx,'+ $         
-         'seddeblend=seddeblend, fitdilute=fitdilute,'+$
+         'diluted=diluted, fitdilute=fitdilute,'+$
          'nplanets=nplanets,'+$
          'fittran=fittran, fitrv=fitrv,'+$ ; fitsb2=fitsb2
          'rossiter=rossiter,fitdt=fitdt,'+$
