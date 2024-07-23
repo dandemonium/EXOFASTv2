@@ -1355,11 +1355,11 @@ for j=0L, ss.ntran-1 do begin
       endif
    endif
 
-   ;; ellipsoidal variations
-   if band.ellipsoidal.value ne 0d0 then begin
-      minperiod = min(ss.planet.period.value,ndx)
-      modelflux = modelflux * (1d0 - band.ellipsoidal.value/1d6*cos(2d0*!dpi*(transitbjd-ss.planet[ndx].tc.value)/(ss.planet[ndx].period.value/2d0)))
-   endif
+   ;; ellipsoidal variations -- commented out by DJS; eBEER formulae put in exofast_tran.pro
+;   if band.ellipsoidal.value ne 0d0 then begin
+;      minperiod = min(ss.planet.period.value,ndx)
+;      modelflux = modelflux * (1d0 - band.ellipsoidal.value/1d6*cos(2d0*!dpi*(transitbjd-ss.planet[ndx].tc.value)/(ss.planet[ndx].period.value/2d0)))
+;   endif
 
    ;; now integrate the model points (before detrending)
    ;; Riemann integration beats trapezoidal and simpsons wins when
@@ -1403,6 +1403,13 @@ for j=0L, ss.ntran-1 do begin
    if ss.transit[j].fitspline then begin
       if transit.breakpts[0] eq -1 then $         
          norm = keplerspline(transit.bjd, transit.flux-modelflux+1d0, ndays=ss.transit[j].splinespace) $
+      else norm = keplerspline(transit.bjd, transit.flux-modelflux+1d0, breakp=transit.breakpts, ndays=ss.transit[j].splinespace)
+      modelflux *= norm
+   endif else norm = 1d0
+
+   ;; Apply MASCARA team's local-linear detrending procedure to MASCARA light curves:
+   ;if ss.transit[j].fitloclin then begin
+      norm = keplerspline(transit.bjd, transit.flux-modelflux+1d0, ndays=ss.transit[j].splinespace) $
       else norm = keplerspline(transit.bjd, transit.flux-modelflux+1d0, breakp=transit.breakpts, ndays=ss.transit[j].splinespace)
       modelflux *= norm
    endif else norm = 1d0
