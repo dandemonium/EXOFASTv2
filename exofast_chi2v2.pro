@@ -1409,10 +1409,10 @@ for j=0L, ss.ntran-1 do begin
 
    ;; Apply MASCARA team's local-linear detrending procedure to MASCARA light curves:
    ;if ss.transit[j].fitloclin then begin
-      norm = keplerspline(transit.bjd, transit.flux-modelflux+1d0, ndays=ss.transit[j].splinespace) $
-      else norm = keplerspline(transit.bjd, transit.flux-modelflux+1d0, breakp=transit.breakpts, ndays=ss.transit[j].splinespace)
-      modelflux *= norm
-   endif else norm = 1d0
+;      norm = keplerspline(transit.bjd, transit.flux-modelflux+1d0, ndays=ss.transit[j].splinespace) $
+;      else norm = keplerspline(transit.bjd, transit.flux-modelflux+1d0, breakp=transit.breakpts, ndays=ss.transit[j].splinespace)
+;      modelflux *= norm
+;   endif else norm = 1d0
 
 phase = (transitbjd - ss.planet[0].tc.value) mod ss.planet[0].period.value
 toohigh = where(phase gt ss.planet[0].period.value/2d0)
@@ -1560,7 +1560,7 @@ for i=0L, ss.nplanets-1L do begin
          LOADCT, 39,/silent
          colors = [0,254,159,95,223,31,207,111,191,47]
          charsizelegend = 0.09
-      f   xlegend = 0.1
+         xlegend = 0.1
          ylegend = 0.90
          charsize = 0.5
       endif else begin
