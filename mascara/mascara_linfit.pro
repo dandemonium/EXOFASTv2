@@ -25,7 +25,7 @@ function mascara_linfit, lstidx, x, y, sky, mag, emag
         i1 = strides[i]
         i2 = strides[i+1]
 ;;; EVERYTHING BELOW THIS LINE NEEDS TO BE CONVERTED        
-        pars[i] = np.linalg.lstsq(mat[i1:i2]/emag[i1:i2,np.newaxis], mag[i1:i2]/emag[i1:i2], rcond=None)[0]
+        pars[i] = LA_LEAST_SQUARES(mat[i1:i2]/emag[i1:i2,np.newaxis], mag[i1:i2]/emag[i1:i2], rcond=0)[0]
 	endfor
     trend = total(pars[idx_inv]*mat, axis=1)
 
