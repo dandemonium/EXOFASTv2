@@ -152,16 +152,16 @@ if thermal ne 0d0 then modelflux += 1d-6*thermal*planetvisible
 ;; phase-dependent reflection off planet
 if reflect ne 0d0 then begin
 
-;;   if n_elements(tc) eq 0 then begin
-;;      phase = exofast_getphase(e,omega,/primary)  
-;;      tc0 = tp - phase*period
-;;   endif else tc0 = tc
    ;; This is non-physical! negative flux during primary transit
    ;modelflux-=1d-6*reflect*cos(2d0*!dpi*(transitbjd-tc0)/period)*planetvisible
-
+  if e eq 0 then begin  ;;; commented out June 6, 2023;
+    if n_elements(tc) eq 0 then begin
+      phase = exofast_getphase(e,omega,/primary)  
+      tc0 = tp - phase*period
+    endif else tc0 = tc
    ;; This makes flux=0 during primary transit (Thanks Sam Quinn!)
-;.   modelflux-=(1d-6*reflect/2d0)*(cos(2d0*!dpi*(transitbjd-tc0)/period)-1d0)*planetvisible
-
+   modelflux-=(1d-6*reflect/2d0)*(cos(2d0*!dpi*(transitbjd-tc)/period)-1d0)*planetvisible
+  endif else begin
    ;;modelflux+=1d-6*reflect*sin(!dpi*(transitbjd-tc0)/period)^2d0*planetvisible
 ;  if e eq 0 then begin  ;;; commented out June 6, 2023
 ;    cosz = -1d0*sin(inc)*cos(2d0*!dpi*(transitbjd-tc)/period)
@@ -170,6 +170,7 @@ if reflect ne 0d0 then begin
  ;;;terms in A_ref  propto sin(i) and Psi(lam)/sin(i) are cancelled out already.
 ;  endif else begin
    modelflux += 1d-6*reflect*(beta_ebeer^(2d0))*(0.64 - (sin(inc)*sin(omega+trueanom))+(0.18*sin(inc)*sin(inc)*(1.-cos(2.*(omega+trueanom)))))*planetvisible ;; this is the eBEER formalism, but with a * that I omitted.
+   endelse
 endif
 
 ;; normalization and dilution due to neighboring star
@@ -178,12 +179,15 @@ else modelflux *= f0
 
 ;; add beaming and ellipsoidal variations
 if ellipsoidal ne 0d0 then begin
-;   if n_elements(tc) eq 0 and n_elements(tc0) eq 0 then begin
-;      phase = exofast_getphase(e,omega,/primary)  
-;      tc0 = tp - phase*period
-;   endif else tc0 = tc
-;   modelflux = modelflux * (1d0 - ellipsoidal/1d6*cos(2d0*!dpi*(transitbjd-tc0)/(period/2d0)))
-   modelflux+= 1d-6*ellipsoidal*cos(2.*(omega+trueanom))*beta_ebeer^(3.)
+  if e eq 0 then begin  ;;; commented out June 6, 2023;
+    if n_elements(tc) eq 0 and n_elements(tc0) eq 0 then begin
+      phase = exofast_getphase(e,omega,/primary)  
+      tc0 = tp - phase*period
+    endif else tc0 = tc
+  modelflux -= ellipsoidal*1d-6*cos(2d0*!dpi*(transitbjd-tc)/(period/2d0))
+  endif else begin
+    modelflux+= 1d-6*ellipsoidal*cos(2.*(omega+trueanom))*beta_ebeer^(3.)
+  endelse
 endif
 
 if beam ne 0d0 then begin
@@ -191,7 +195,7 @@ if beam ne 0d0 then begin
       phase = exofast_getphase(e,omega,/primary)  
       tc0 = tp - phase*period
    endif else tc0 = tc
-;   modelflux += beam/1d6 * sin(2d0*!dpi*(transitbjd-tc0)/period)
+   if e eq 0 then modelflux += beam*1d-6 * sin(2d0*!dpi*(transitbjd-tc)/period) else $
    modelflux += -1d-6*beam*sin(inc)*cos(trueanom+omega)/sqrt(1.-(e*e))
 endif
 

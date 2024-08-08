@@ -89,24 +89,30 @@ for i=0L, n_elements(*ss.priors)-1 do begin
    ;; the prior is linked to another variable -- get its value
    if prior.value[4] ne -1 then begin
       value = (*ss.(prior.value[0])[prior.value[1]].(prior.value[2])[prior.value[3]]).(prior.value[4])[prior.value[5]].value
-;      value = ss.(prior.value[0])[prior.value[1]].(prior.value[2])[prior.value[3]].(prior.value[4])[prior.value[5]].value
+      label = (*ss.(prior.value[0])[prior.value[1]].(prior.value[2])[prior.value[3]]).(prior.value[4])[prior.value[5]].label
    endif else if prior.value[2] ne -1 then begin
       value = ss.(prior.value[0])[prior.value[1]].(prior.value[2])[prior.value[3]].value
+      label = ss.(prior.value[0])[prior.value[1]].(prior.value[2])[prior.value[3]].label
    endif else begin
       value = ss.(prior.value[0])[prior.value[1]].value
+      label = ss.(prior.value[0])[prior.value[1]].label
    endelse
 
    ;; assign the value
    if prior.map[4] ne -1 then begin
       (*ss.(prior.map[0])[prior.map[1]].(prior.map[2])[prior.map[3]]).(prior.map[4])[prior.map[5]].value = value
-      ;ss.(prior.map[0])[prior.map[1]].(prior.map[2])[prior.map[3]].(prior.map[4])[prior.map[5]].value = value
    endif else if prior.map[2] ne -1 then begin
       ss.(prior.map[0])[prior.map[1]].(prior.map[2])[prior.map[3]].value = value
    endif else if prior.map[0] ne -1 then begin
       ss.(prior.map[0])[prior.map[1]].value = value
    endif     
 
+   if ss.verbose then printandlog, $
+      'linking ' + prior.name + ' to ' + label
+   
 endfor
+
+
 
 ;; *** First make sure step parameters are in bounds ***
 
@@ -1349,11 +1355,11 @@ for j=0L, ss.ntran-1 do begin
       endif
    endif
 
-   ;; ellipsoidal variations
-   if band.ellipsoidal.value ne 0d0 then begin
-      minperiod = min(ss.planet.period.value,ndx)
-      modelflux = modelflux * (1d0 - band.ellipsoidal.value/1d6*cos(2d0*!dpi*(transitbjd-ss.planet[ndx].tc.value)/(ss.planet[ndx].period.value/2d0)))
-   endif
+   ;; ellipsoidal variations -- commented out by DJS; eBEER formulae put in exofast_tran.pro
+;   if band.ellipsoidal.value ne 0d0 then begin
+;      minperiod = min(ss.planet.period.value,ndx)
+;      modelflux = modelflux * (1d0 - band.ellipsoidal.value/1d6*cos(2d0*!dpi*(transitbjd-ss.planet[ndx].tc.value)/(ss.planet[ndx].period.value/2d0)))
+;   endif
 
    ;; now integrate the model points (before detrending)
    ;; Riemann integration beats trapezoidal and simpsons wins when
@@ -1400,6 +1406,13 @@ for j=0L, ss.ntran-1 do begin
       else norm = keplerspline(transit.bjd, transit.flux-modelflux+1d0, breakp=transit.breakpts, ndays=ss.transit[j].splinespace)
       modelflux *= norm
    endif else norm = 1d0
+
+   ;; Apply MASCARA team's local-linear detrending procedure to MASCARA light curves:
+   ;if ss.transit[j].fitloclin then begin
+;      norm = keplerspline(transit.bjd, transit.flux-modelflux+1d0, ndays=ss.transit[j].splinespace) $
+;      else norm = keplerspline(transit.bjd, transit.flux-modelflux+1d0, breakp=transit.breakpts, ndays=ss.transit[j].splinespace)
+;      modelflux *= norm
+;   endif else norm = 1d0
 
 phase = (transitbjd - ss.planet[0].tc.value) mod ss.planet[0].period.value
 toohigh = where(phase gt ss.planet[0].period.value/2d0)
