@@ -2,7 +2,7 @@
 ;; workaround if a demo license is being used
 ;; does not properly escape double quotes inside str
 
-pro exofast_printf, lun, str, filename=filename, new=new
+pro exofast_printf, lun, str, filename=filename, new=new, close=close
 
   if lmgr(/demo) then begin
      if n_elements(filename) eq 0 then $

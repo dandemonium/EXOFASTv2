@@ -179,6 +179,6 @@ endfor
 file_copy, path + bipm_filename, path + 'bipmfile', /overwrite
 
 ;; update the "last updated" file to now
-exofast_printf, lun, strtrim(now,2), filename=updatefile, /new
+exofast_printf, lun, strtrim(now,2), filename=updatefile, /new, /close
 
 end

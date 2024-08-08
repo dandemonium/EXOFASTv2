@@ -500,17 +500,18 @@ if keyword_set(debug) or keyword_set(psname) eq 1 then begin
       device, encapsulated=0
       
       ;; create a residual file
-      residualfilename = file_dirname(psname) + path_sep() + 'modelfiles' + path_sep() + file_basename(psname,'.eps') + '.residuals.txt'
+      residualfilename = file_dirname(psname) + path_sep() + 'modelfiles' + path_sep() + '.residuals.txt'
       
       startxt = strarr(nbands)
       for i=0L, nbands-1 do begin
          ;if (i eq tessmatch) then continue ; don't plot the TESS band
          startxt[i] = strjoin(strtrim(where(blend[i,*]),2),',')
       endfor    
-;      exofast_forprint, sedbands, weff, widtheff, sed, errflux, flux, flux-flux,startxt, textout=residualfilename, $
+;      for i=0, nstars - 1 do begin
+;         exofast_forprint, sedbands, weff, widtheff, sed, errflux, flux, flux-flux, startxt, textout=residualfilename+'_'+string(i), $
 ;                        comment='# Filtername, Center wavelength (um), half bandpass (um), flux, error, flux, residuals (erg/s/cm^2), star indices', $
 ;                        format='(a20,x,f0.6,x,f0.6,x,e0.6,x,e0.6,x,e0.6,x,e0.6,x,a)'
-      
+;      endfor
    endif
    set_plot, mydevice
    cgPS2PDF,psname

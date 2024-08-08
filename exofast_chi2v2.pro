@@ -1326,8 +1326,8 @@ for j=0L, ss.ntran-1 do begin
                                     reflect=band.reflect.value, $
                                     phaseshift=band.phaseshift.value, $
                                     ellipsoidal=band.ellipsoidal.value, $
-                                    beam=band.beam.value, $
-;                                    beam=ss.planet[i].beam.value,$
+;                                    beam=band.beam.value, $
+                                    beam=ss.planet[i].beam.value,$
 ;                                    dilute=band.dilute.value,$
                                     dilute=ss.transit[j].dilute.value,$
                                     tc=ss.planet[i].tc.value,$
@@ -1547,7 +1547,7 @@ for i=0L, ss.nplanets-1L do begin
          LOADCT, 39,/silent
          colors = [0,254,159,95,223,31,207,111,191,47]
          charsizelegend = 0.09
-      f   xlegend = 0.1
+         xlegend = 0.1
          ylegend = 0.90
          charsize = 0.5
       endif else begin

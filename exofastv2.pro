@@ -1278,7 +1278,7 @@ if lmgr(/vm) or lmgr(/runtime) then begin
              mksummarypg=mksummarypg,$
              nocovar=nocovar,$
              plotonly=plotonly, bestonly=bestonly,$
-             logname=logname,fitgaia=fitgaia
+             logname=logname
 
 endif
 
@@ -1508,7 +1508,7 @@ if nthreads gt 1 then begin
       ;; create the stellar stucture within each thread
       thread_array[i].obridge->execute,$
          'ss = mkss(priorfile=priorfile, prefix=prefix,'+$
-         'rvpath=rvpath, tranpath=tranpath,'+$ ;sb2path=sb2path
+         'rvpath=rvpath, tranpath=tranpath,'+$
          'astrompath=astrompath, dtpath=dtpath,'+$
          'fluxfile=fluxfile, mistsedfile=mistsedfile,'+$
          'sedfile=sedfile,specphotpath=specphotpath,'+$
@@ -1523,9 +1523,9 @@ if nthreads gt 1 then begin
          'fitreflect=fitreflect,fitphase=fitphase,'+ $
          'fitbeam=fitbeam, derivebeam=derivebeam,'+ $
          'nstars=nstars,starndx=starndx,'+ $         
-         'diluted=diluted, fitdilute=fitdilute,'+$
+         'seddeblend=seddeblend, fitdilute=fitdilute,'+$
          'nplanets=nplanets,'+$
-         'fittran=fittran, fitrv=fitrv,'+$ ; fitsb2=fitsb2
+         'fittran=fittran, fitrv=fitrv,'+$
          'rossiter=rossiter,fitdt=fitdt,'+$
          'circular=circular,tides=tides,'+$
          'alloworbitcrossing=alloworbitcrossing,'+$
@@ -1535,8 +1535,9 @@ if nthreads gt 1 then begin
          'ttvs=ttvs, tivs=tivs, tdeltavs=tdeltavs,'+$
          'longcadence=longcadence,exptime=exptime,ninterp=ninterp,'+$ 
          'rejectflatmodel=rejectflatmodel,'+$
+         'noprimary=noprimary, requiresecondary=requiresecondary,'+$
          'fitspline=fitspline, splinespace=splinespace,'+$
-         'fitwavelet=fitwavelet,'+$
+         'fitramp=fitramp, fitwavelet=fitwavelet,'+$
          'fitlogmp=fitlogmp,'+$
          'novcve=novcve, nochord=nochord, fitsign=fitsign,'+$
          'fittt=fittt, earth=earth,'+$

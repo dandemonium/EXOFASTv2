@@ -2225,7 +2225,7 @@ planet = create_struct($
          ptg.label,ptg,$
          ps.label,ps,$                 
          psg.label,psg,$     
- ;        beam.label,beam,$     ;; other
+         beam.label,beam,$     ;; other
          'starndx',0L,$
          'fittran',fittran[0],$        ;; booleans
          'fitrv',fitrv[0],$
@@ -2251,7 +2251,7 @@ band = create_struct(u1.label,u1,$ ;; linear limb darkening
                      reflect.label,reflect,$ ;; reflection
                      phaseshift.label,phaseshift,$ ;; reflection
                      ellipsoidal.label,ellipsoidal,$ ;; ellipsoidal variations
-                     beam.label,beam,$ ;; beaming                     
+                     ; beam.label,beam,$ ;; beaming                     
                      eclipsedepth.label,eclipsedepth,$
                      mag.label,mag,$
                      phottobary.label,phottobary,$
@@ -2713,10 +2713,10 @@ for i=0, nplanets-1 do begin
 
    endif
 
-;   if fitbeam[i] then begin
-;      ss.planet[i].beam.fit = 1B
-;      ss.planet[i].beam.derive = 1B
-;   endif else if derivebeam[i] then ss.planet[i].beam.derive = 1B
+   if fitbeam[i] then begin
+      ss.planet[i].beam.fit = 1B
+      ss.planet[i].beam.derive = 1B
+   endif else if derivebeam[i] then ss.planet[i].beam.derive = 1B
 
    if i180[i] or ss.nastrom gt 0 then ss.planet[i].i180 = 1
 
@@ -2787,11 +2787,11 @@ for i=0, nband-1 do begin
 ;      printandlog, "Not fitting Doppler beaming for " + ss.band[i].name + " band", logname
 ;   endif
 ;   match = where(fitphase eq ss.band[i].name)
-;   if match[0] ne -1 then begin
-;      ss.band[i].phaseshift.fit = 1B
-;      ss.band[i].phaseshift.derive = 1B
-;      if ~keyword_set(silent) then printandlog, "Fitting phase offset for " + ss.band[i].name + " band", logname
-;   endif
+   if match[0] ne -1 then begin
+      ss.band[i].phaseshift.fit = 1B
+      ss.band[i].phaseshift.derive = 1B
+      if ~keyword_set(silent) then printandlog, "Fitting phase offset for " + ss.band[i].name + " band", logname
+   endif
 
 ;   match = where(fitdilute eq ss.band[i].name)
 ;   if match[0] ne -1 then begin
