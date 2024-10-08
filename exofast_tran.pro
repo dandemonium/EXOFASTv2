@@ -173,10 +173,6 @@ if reflect ne 0d0 then begin
    endelse
 endif
 
-;; normalization and dilution due to neighboring star
-if dilute ne 0d0 then modelflux = f0*(modelflux*(1d0-dilute)+dilute) $
-else modelflux *= f0
-
 ;; add beaming and ellipsoidal variations
 if ellipsoidal ne 0d0 then begin
   if e eq 0 then begin  ;;; commented out June 6, 2023;
@@ -198,6 +194,10 @@ if beam ne 0d0 then begin
    if e eq 0 then modelflux += beam*1d-6 * sin(2d0*!dpi*(transitbjd-tc)/period) else $
    modelflux += -1d-6*beam*sin(inc)*cos(trueanom+omega)/sqrt(1.-(e*e))
 endif
+
+;; normalization and dilution due to neighboring star
+if dilute ne 0d0 then modelflux = f0*(modelflux*(1d0-dilute)+dilute) $
+else modelflux *= f0
 
 
 return, modelflux
