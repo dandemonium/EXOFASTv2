@@ -150,11 +150,12 @@ if keyword_set(derivethermal) then begin ; assume 0,1 correspond to EB   hoststa
    tessmatch = where(sedbands eq 'TESS_TESS.Red',complement=not_tess)
    secflux = total(sed[eclipsing_ndx,*]*filter_curves[tessmatch,*])/filter_curve_sum[tessmatch]
    priflux = total(sed[hoststar_ndx,*]*filter_curves[tessmatch,*])/filter_curve_sum[tessmatch]
-   thermal = 1d6*secflux/(priflux+secflux);(priflux+secflux)
- ;  tesserr = errflux[tessmatch] ; store for later
- ;  if finite(errflux[tessmatch]) then errflux[tessmatch] = !values.d_infinity ; don't penalize the SED
+   thermal = 1d6*secflux/priflux;(priflux+secflux)
+   ;tesserr = errflux[tessmatch] ; store for later
+   if finite(errflux[tessmatch]) then errflux[tessmatch] = !values.d_infinity ; don't penalize the SED
 endif else begin
    thermal = -1*!values.d_infinity;stop
+   tessmatch = where(sedbands eq 'TESS_TESS.Red',complement=not_tess)
   ; not_tess = indgen(nbands)
 endelse
 
@@ -243,8 +244,8 @@ if keyword_set(debug) or keyword_set(psname) eq 1 then begin
    xmin = min(weff, max=xmax)
    xmax = 30
    xmin = 0.1
-   ymin = alog10(min([flux[absolute],flux[absolute]-errflux[absolute]])) ;,reform(atmospheres,n_elements(atmospheres))]))
-   ymax = alog10(max([flux[absolute],flux[absolute]+errflux[absolute],total(sed,1)]))
+   ymin = alog10(min([flux[absolute],flux[absolute]-(errflux[absolute])[where(finite(errflux[absolute]))]])) ;,reform(atmospheres,n_elements(atmospheres))]))
+   ymax = alog10(max([flux[absolute],flux[absolute]+(errflux[absolute])[where(finite(errflux[absolute]))],total(sed,1)]))
 
    ;print, nspecfiles, teff, sperrscale[0], sperrscale[1], spzeropoint[0], spzeropoint[1], sedchi2
 
@@ -281,7 +282,7 @@ if keyword_set(debug) or keyword_set(psname) eq 1 then begin
       legendcolors = colors[(lindgen(nstars)+1) mod ncolors]
       
       for i=0L, nbands-1L do begin 
-         ;if (i eq tessmatch) then continue ; don't plot the TESS band
+         if (i eq tessmatch) then continue ; don't plot the TESS band
          ;; if the observed band is some combination of more than one but not all stars
          if total(abs(blend[i,*])) gt 1 and total(blend[i,*]) ne nstars then begin
             starstr = strjoin(starnames[where(blend[i,*] eq 1)],'+')
@@ -366,7 +367,7 @@ if keyword_set(debug) or keyword_set(psname) eq 1 then begin
    res_errlo = dblarr(nbands)
    
    for i=0, nbands-1 do begin
-      ;if (i eq tessmatch) then continue ; don't plot the TESS band
+      if (i eq tessmatch) then continue ; don't plot the TESS band
       ;; plot model bands (blue filled circles)
       relative = where(blend[i,*] eq -1)
       if relative[0] eq -1 then begin
@@ -393,10 +394,12 @@ if keyword_set(debug) or keyword_set(psname) eq 1 then begin
          res_errlo[i] = (-2.5d0*alog10(modelfluxpos[i]/modelfluxneg[i])-mag[i]-errmag[i]*errscale)/(errmag[i]*errscale)
 
       endelse
+      if errflux[i] eq !values.d_infinity then continue ; don't try to plot infinitely large y-axis error bars (DJS).
 
       ;; plot the observed bands (red points with 2D error bars)
       ;; oploterror has too many dependencies; do it myself
       ;; x error bar (red points)
+      
       oplot, [weff[i]-widtheff[i]/2d0,weff[i]+widtheff[i]/2d0], alog10([flux[i],flux[i]]), color=colors[1]
       ebw = !d.y_vsize/100d0 ;; error bar width = 1% of device size
       xy1 = convert_coord(weff[i]-widtheff[i]/2d0,alog10(flux[i]),/to_device)
@@ -459,7 +462,7 @@ if keyword_set(debug) or keyword_set(psname) eq 1 then begin
    endfor
 
    for i=0L, nbands-1 do begin
-      ;if (i eq tessmatch) then continue ; don't plot the TESS band
+      if (i eq tessmatch) then continue ; don't plot the TESS band
       plotsym, 0, symsize, /fill, color=pointcolors[i]
       ;; plot the data points
       oplot, [weff[i]], [residuals[i]], psym=8;, color=pointcolors[i]
@@ -504,7 +507,7 @@ if keyword_set(debug) or keyword_set(psname) eq 1 then begin
       
       startxt = strarr(nbands)
       for i=0L, nbands-1 do begin
-         ;if (i eq tessmatch) then continue ; don't plot the TESS band
+         if (i eq tessmatch) then continue ; don't plot the TESS band
          startxt[i] = strjoin(strtrim(where(blend[i,*]),2),',')
       endfor    
 ;      for i=0, nstars - 1 do begin
