@@ -31,7 +31,7 @@ if n_elements(flux) eq 0 or keyword_set(redo) then begin
    ;; read in the SED bands
    readsedfile, sedfile, nstars, sedbands=sedbands, mag=mag,errmag=errmag,blend=blend,$
                 filter_curves=filter_curves, weff=weff, widtheff=widtheff, zero_point=zero_point, $
-                flux=flux, errflux=errflux, filter_curve_sum=filter_curve_sum, derivethermal=derivethermal
+                flux=flux, errflux=errflux, filter_curve_sum=filter_curve_sum;, derivethermal=derivethermal
    blend0 = blend 
    nbands=n_elements(weff)
    readcol,filepath('extinction_law.ascii',root_dir=getenv('EXOFAST_PATH'),subdir='sed'),klam,kkap,/silent
