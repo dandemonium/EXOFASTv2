@@ -31,7 +31,7 @@ if n_elements(flux) eq 0 or keyword_set(redo) then begin
    ;; read in the SED bands
    readsedfile, sedfile, nstars, sedbands=sedbands, mag=mag,errmag=errmag,blend=blend,$
                 filter_curves=filter_curves, weff=weff, widtheff=widtheff, zero_point=zero_point, $
-                flux=flux, errflux=errflux, filter_curve_sum=filter_curve_sum
+                flux=flux, errflux=errflux, filter_curve_sum=filter_curve_sum, derivethermal=derivethermal
    blend0 = blend 
    nbands=n_elements(weff)
    readcol,filepath('extinction_law.ascii',root_dir=getenv('EXOFAST_PATH'),subdir='sed'),klam,kkap,/silent
@@ -147,14 +147,16 @@ endfor
 if keyword_set(derivethermal) then begin ; assume 0,1 correspond to EB   hoststar_ndx = 0
    hoststar_ndx = 0
    eclipsing_ndx = 1
-   tessmatch = where(sedbands eq 'TESS_TESS.Red',complement=not_tess)
+   tessmatch = where(sedbands eq "TESS_TESS.Red");,complement=not_tess)
    secflux = total(sed[eclipsing_ndx,*]*filter_curves[tessmatch,*])/filter_curve_sum[tessmatch]
    priflux = total(sed[hoststar_ndx,*]*filter_curves[tessmatch,*])/filter_curve_sum[tessmatch]
-   thermal = 1d6*secflux/(priflux+secflux);(priflux+secflux)
+   thermal = 1d6*secflux/priflux;(priflux+secflux)
+;   thermal = 1d6*rstar[eclipsing_ndx]*rstar[eclipsing_ndx]*secflux/(priflux * rstar[hoststar_ndx] * rstar[hoststar_ndx]);(priflux+secflux)   
  ;  tesserr = errflux[tessmatch] ; store for later
- ;  if finite(errflux[tessmatch]) then errflux[tessmatch] = !values.d_infinity ; don't penalize the SED
+   if finite(errflux[tessmatch]) then errflux[tessmatch] = !values.d_infinity ; don't penalize the SED
 endif else begin
    thermal = -1*!values.d_infinity;stop
+   tessmatch = where(sedbands eq 'TESS_TESS.Red',complement=not_tess)
   ; not_tess = indgen(nbands)
 endelse
 
@@ -243,8 +245,8 @@ if keyword_set(debug) or keyword_set(psname) eq 1 then begin
    xmin = min(weff, max=xmax)
    xmax = 30
    xmin = 0.1
-   ymin = alog10(min([flux[absolute],flux[absolute]-errflux[absolute]])) ;,reform(atmospheres,n_elements(atmospheres))]))
-   ymax = alog10(max([flux[absolute],flux[absolute]+errflux[absolute],total(sed,1)]))
+   ymin = alog10(min([flux[absolute],flux[absolute]-(errflux[absolute])[where(finite(errflux[absolute]))]])) ;,reform(atmospheres,n_elements(atmospheres))]))
+   ymax = alog10(max([flux[absolute],flux[absolute]+(errflux[absolute])[where(finite(errflux[absolute]))],total(sed,1)]))
 
    ;print, nspecfiles, teff, sperrscale[0], sperrscale[1], spzeropoint[0], spzeropoint[1], sedchi2
 
@@ -281,7 +283,7 @@ if keyword_set(debug) or keyword_set(psname) eq 1 then begin
       legendcolors = colors[(lindgen(nstars)+1) mod ncolors]
       
       for i=0L, nbands-1L do begin 
-         ;if (i eq tessmatch) then continue ; don't plot the TESS band
+         if (i eq tessmatch) then continue ; don't plot the TESS band
          ;; if the observed band is some combination of more than one but not all stars
          if total(abs(blend[i,*])) gt 1 and total(blend[i,*]) ne nstars then begin
             starstr = strjoin(starnames[where(blend[i,*] eq 1)],'+')
@@ -366,7 +368,7 @@ if keyword_set(debug) or keyword_set(psname) eq 1 then begin
    res_errlo = dblarr(nbands)
    
    for i=0, nbands-1 do begin
-      ;if (i eq tessmatch) then continue ; don't plot the TESS band
+      if (i eq tessmatch) then continue ; don't plot the TESS band
       ;; plot model bands (blue filled circles)
       relative = where(blend[i,*] eq -1)
       if relative[0] eq -1 then begin
@@ -424,9 +426,9 @@ if keyword_set(debug) or keyword_set(psname) eq 1 then begin
       ymin = min([specres,ymin]) 
       ymax = max([specres,ymax]) 
    endfor
-
-   ymin = floor(min([res_errlo,ymin])/0.5)*0.5
-   ymax = ceil(max([res_errhi,ymax])/0.5)*0.5
+   ;; DJS 2024-08-31: exclude infinite residuals when determining plot y-axis limits
+   ymin = floor(min([res_errlo[where(finite(res_errlo))],ymin])/0.5)*0.5
+   ymax = ceil(max([res_errhi[where(finite(res_errhi))],ymax])/0.5)*0.5
    
    ;; make yrange symmetric
    if abs(ymin) gt abs(ymax) then ymax =  abs(ymin)
@@ -459,7 +461,7 @@ if keyword_set(debug) or keyword_set(psname) eq 1 then begin
    endfor
 
    for i=0L, nbands-1 do begin
-      ;if (i eq tessmatch) then continue ; don't plot the TESS band
+      if (i eq tessmatch) then continue ; don't plot the TESS band
       plotsym, 0, symsize, /fill, color=pointcolors[i]
       ;; plot the data points
       oplot, [weff[i]], [residuals[i]], psym=8;, color=pointcolors[i]
@@ -504,17 +506,22 @@ if keyword_set(debug) or keyword_set(psname) eq 1 then begin
       
       startxt = strarr(nbands)
       for i=0L, nbands-1 do begin
-         ;if (i eq tessmatch) then continue ; don't plot the TESS band
+         if (i eq tessmatch) then continue ; don't plot the TESS band
          startxt[i] = strjoin(strtrim(where(blend[i,*]),2),',')
-      endfor    
-;      for i=0, nstars - 1 do begin
-;         exofast_forprint, sedbands, weff, widtheff, sed, errflux, flux, flux-flux, startxt, textout=residualfilename+'_'+string(i), $
-;                        comment='# Filtername, Center wavelength (um), half bandpass (um), flux, error, flux, residuals (erg/s/cm^2), star indices', $
-;                        format='(a20,x,f0.6,x,f0.6,x,e0.6,x,e0.6,x,e0.6,x,e0.6,x,a)'
-;      endfor
+      endfor
+
+;	     for j=0, nstars - 1 do begin
+;	        exofast_forprint, sedbands[i], sed[j,*]*filter_curves[i,*]/filter_curve_sum[i], textout=residualfilename+'_'+string(j)
+;		 endfor
+ ;     endfor
+      for i=0, nstars - 1 do begin
+      exofast_forprint, sedbands, weff, widtheff, sed[i,*]*filter_curves/filter_curve_sum, errflux, flux, flux-sed[i]*filter_curves/filter_curve_sum, startxt, textout=residualfilename+'_'+string(i), $
+                        comment='# Filtername, Center wavelength (um), half bandpass (um), flux, error, flux, residuals (erg/s/cm^2), star indices', $
+                        format='(a20,x,f0.6,x,f0.6,x,e0.6,x,e0.6,x,e0.6,x,e0.6,x,a)'
+      endfor
    endif
    set_plot, mydevice
-   cgPS2PDF,psname
+    cgPS2PDF, psname, unix_convert_cmd='ps2pdf -dPDFsettings=/printer -dEPSCrop', /showcmd
 end
 sedarr = [sedchi2, thermal]
 return, sedarr
