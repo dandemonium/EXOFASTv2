@@ -300,9 +300,9 @@ if keyword_set(debug) or keyword_set(psname) eq 1 then begin
    if nstars gt 1 then begin
 
       ;; plot model atmospheres for each individual star
-      for i=0L, nstars-1 do begin
-         oplot, wavelength, alog10(smooth(atmospheres[i,*],10)), color=colors[(i+1) mod ncolors]
-      endfor
+      ;for i=0L, nstars-1 do begin
+      ;   oplot, wavelength, alog10(smooth(atmospheres[i,*],10)), color=colors[(i+1) mod ncolors]
+      ;endfor
 
       for i=0L, nbands-1 do begin
          if total(blend[i,*] eq 1) eq 1d0 then pointcolors[i] = colors[((where(blend[i,*] eq 1L))[0]+1) mod ncolors] ;$ ;; only one star, use its color
@@ -337,7 +337,7 @@ if keyword_set(debug) or keyword_set(psname) eq 1 then begin
                   if legendndx[0] eq -1 then begin ;; if I haven't done this blend yet
                      blended_atmosphere = total(atmospheres[blendstarndx,*],1)
                      color = colors[colorndx mod ncolors]
-                     oplot, wavelength, alog10(smooth(blended_atmosphere,10)), color=color
+                     ;oplot, wavelength, alog10(smooth(blended_atmosphere,10)), color=color
                      legendlabels = [legendlabels,legendtxt]
                      legendcolors = [legendcolors,color]
                      colorndx++
@@ -363,7 +363,7 @@ if keyword_set(debug) or keyword_set(psname) eq 1 then begin
    endif
 
    ;; plot all model atmospheres blended together
-   oplot, wavelength, alog10(smooth(total(atmospheres,1),10)),color=colors[0]
+   ;oplot, wavelength, alog10(smooth(total(atmospheres,1),10)),color=colors[0]
 
    ;; plot bands
    oplot, wp, alog10(modelblendflux), psym=8
@@ -472,6 +472,7 @@ if keyword_set(debug) or keyword_set(psname) eq 1 then begin
 
    endif
    set_plot, mydevice
+   cgPS2PDF, psname, unix_convert_cmd='ps2pdf -dPDFsettings=/printer -dEPSCrop', /showcmd
 endif
 
 

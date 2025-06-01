@@ -116,6 +116,7 @@ endfor
 
 if keyword_set(psname) then begin
    device, /close
+   cgPS2PDF, psname, unix_convert_cmd='ps2pdf -dPDFsettings=/printer', /showcmd
 endif
 
 end

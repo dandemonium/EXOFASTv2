@@ -1,10 +1,10 @@
 ;; The SED constrains Teff, logg, [Fe/H], Extinction, and (Rstar/Distance)^2
-function exofast_multised,teff, logg, feh, av, distance, lstar, errscale, sedfile, alpha=alpha, debug=debug, psname=psname, range=range, specphotpath=specphotpath, logname=logname,redo=redo,blend0=blend0,rstar=rstar, sperrscale=sperrscale,spzeropoint=spzeropoint, verbose=verbose, derivethermal=derivethermal
+function exofast_multised,teff, logg, feh, av, distance, lstar, errscale, sedfile, alpha=alpha, debug=debug, psname=psname, range=range, specphotpath=specphotpath, logname=logname,redo=redo,blend0=blend0,rstar=rstar, sperrscale=sperrscale,spzeropoint=spzeropoint, verbose=verbose, derivethermal=derivethermal, dbstarndx=dbstarndx, dbbandnames=dbbandnames
 
 
 
 nstars = n_elements(teff)
-
+ndbbands = n_elements(dbbandnames)
 if n_elements(alpha) eq 0 then alpha = dblarr(nstars) $
 else if n_elements(alpha) ne nstars then message, 'TEFF and ALPHA must have the same number of elements'
 if n_elements(logg) ne nstars then message, 'TEFF and LOGG must have the same number of elements'
@@ -16,7 +16,7 @@ if n_elements(lstar) ne nstars then message, 'TEFF and LSTAR must have the same 
 if n_elements(specphotpath) eq 0 then specphotpath=''
 
 ;; store the atmosphere grids in memory to avoid expensive disk IO at each step
-common multised_block, wavelength, nwaves, kapv, kapp1, mag, errmag, flux, errflux, blend, sedbands, weff, widtheff, nbands, filter_curves, nspecfiles, labels, spectrophotometry, specblend, filter_curve_sum, zero_point=zero_point,dlambda
+common multised_block, wavelength, nwaves, kapv, kapp1, mag, errmag, flux, errflux, blend, sedbands, weff, widtheff, nbands, filter_curves, nspecfiles, labels, spectrophotometry, specblend, filter_curve_sum, zero_point=zero_point,dlambda, thermalbands,therm_filter_curves, therm_filter_curve_sum, deblend_filter_curves, deblend_filter_curve_sum, sed_struct;,  therm_weff, therm_widtheff, therm_zero_point
 
 ;c=2.9979e14 ;; um/s
 if n_elements(pc) eq 0 then pc=3.0857e18 ;; cm
@@ -31,7 +31,15 @@ if n_elements(flux) eq 0 or keyword_set(redo) then begin
    ;; read in the SED bands
    readsedfile, sedfile, nstars, sedbands=sedbands, mag=mag,errmag=errmag,blend=blend,$
                 filter_curves=filter_curves, weff=weff, widtheff=widtheff, zero_point=zero_point, $
-                flux=flux, errflux=errflux, filter_curve_sum=filter_curve_sum;, derivethermal=derivethermal
+                flux=flux, errflux=errflux, filter_curve_sum=filter_curve_sum, derivethermal=derivethermal, thermalbands=thermalbands, $
+				therm_filter_curves=therm_filter_curves, therm_filter_curve_sum=therm_filter_curve_sum, dbbandnames=dbbandnames, deblend_filter_curves=deblend_filter_curves, $
+				deblend_filter_curve_sum=deblend_filter_curve_sum ;therm_weff=therm_weff, therm_widtheff=therm_widtheff, therm_zero_point=therm_zero_point, $
+   if ~keyword_set(thermalbands) then ntb = 1 else ntb = n_elements(thermalbands)
+   sed_struct = create_struct('sedchi2', 0d0, $
+                              'sedthermal',  dblarr(ntb), $
+                              'lcblendflux', dblarr(ndbbands, n_elements(dbstarndx)))
+
+				
    blend0 = blend 
    nbands=n_elements(weff)
    readcol,filepath('extinction_law.ascii',root_dir=getenv('EXOFAST_PATH'),subdir='sed'),klam,kkap,/silent
@@ -76,7 +84,8 @@ endif else if n_elements(spzeropoint) eq 1 then begin
    spzeropoint = dblarr(nspecfiles>1) + spzeropoint
 endif else begin
    print, "SPZEROPOINT must be a 1 or NSPECFILES element array"
-   return, !values.d_infinity
+   sed_struct.sedchi2 = !values.d_infinity
+   return, sed_struct ; edited by DJS
 endelse
 
 
@@ -91,8 +100,10 @@ for j=0L, nstars-1 do begin
    endelse
 
    ;; interpolation failed, skip
-   if ~finite(lamflam1temp[0]) then return, [!values.d_infinity, !values.d_infinity] ; edited by DJS
-   ;; convert to observed flux -- interpolation breaks flux=sigma*T^4, renormalize
+   if ~finite(lamflam1temp[0]) then begin
+      sed_struct.sedchi2 = !values.d_infinity
+      return, sed_struct ; edited by DJS
+   endif ;; convert to observed flux -- interpolation breaks flux=sigma*T^4, renormalize
    constants = mkconstants()
    fbol0 = (lstar[j]*constants.lsun)/(4d0*!dpi*(distance[j]*pc)^2) 
    fbol1 = total(lamflam1temp*dlambda/wavelength) 
@@ -144,25 +155,46 @@ for j=0L, nstars-1 do begin
 endfor
 
 ;;; ADDED BY DJS -- see calls to exofast_multised.pro in mkss.pro and exofast_chi2v2.pro
-if keyword_set(derivethermal) then begin ; assume 0,1 correspond to EB   hoststar_ndx = 0
-   hoststar_ndx = 0
-   eclipsing_ndx = 1
-   tessmatch = where(sedbands eq "TESS_TESS.Red");,complement=not_tess)
-   secflux = total(sed[eclipsing_ndx,*]*filter_curves[tessmatch,*])/filter_curve_sum[tessmatch]
-   priflux = total(sed[hoststar_ndx,*]*filter_curves[tessmatch,*])/filter_curve_sum[tessmatch]
-   thermal = 1d6*secflux/priflux;(priflux+secflux)
-   ;tesserr = errflux[tessmatch] ; store for later
-   if finite(errflux[tessmatch]) then errflux[tessmatch] = !values.d_infinity ; don't penalize the SED
-endif else begin
-   thermal = -1*!values.d_infinity;stop
-   tessmatch = where(sedbands eq 'TESS_TESS.Red',complement=not_tess)
+if n_elements(thermalbands) gt 0 then begin ; assume 0,1 correspond to EB   hoststar_ndx = 0
+   if ~keyword_set(dthpairs) then begin 
+      hoststar_ndx = 0
+      eclipsing_ndx = 1
+   endif else begin
+      ;for i=0, n_elements(dthpairs)-1 do begin
+      hoststar_ndx = dthpairs[0]
+      eclipsing_ndx = dthpairs[1]
+      ;endfor
+   endelse
+   for b=0, n_elements(thermalbands)-1 do begin
+;      tmpmatch = where(sedbands eq thermalbands[b])
+;	  if ~keyword_set(bandmatch) then bandmatch = tmpmatch else match = [bandmatch, tmpmatch]
+;	  bandmatch = where(sedbands eq 'TESS_TESS.Red',complement=not_tess)
+   ; not_tess = indgen(nbands)   secflux = total(sed[eclipsing_ndx,*]*filter_curves[bandmatch,*])/filter_curve_sum[bandmatch]
+      priflux = total(sed[hoststar_ndx,*]*therm_filter_curves[b,*]);/filter_curve_sum[bandmatch]
+      secflux = total(sed[eclipsing_ndx,*]*therm_filter_curves[b,*]);/filter_curve_sum[bandmatch]
+      sed_struct.sedthermal[b] = 1d6*secflux/priflux;(priflux+secflux)
+   endfor
+   ;tesserr = errflux[bandmatch] ; store for later
+   ;if finite(errflux[bandmatch]) then errflux[bandmatch] = !values.d_infinity ; don't penalize the SED
+endif; else begin
+;   thermal = -1*!values.d_infinity;stop
+;   bandmatch = where(sedbands eq 'TESS_TESS.Red',complement=not_tess)
   ; not_tess = indgen(nbands)
-endelse
+;endelse
+
+;;; Added by DJS: deblend the light curves
+if ((ndbbands gt 0) and (total(dbstarndx) gt 0)) then begin
+   for j=0L, n_elements(dbstarndx)-1 do begin
+      for i=0L, ndbbands-1 do begin
+         sed_struct.lcblendflux[i,j] = total(sed[dbstarndx[j],*]*deblend_filter_curves[i,*])/deblend_filter_curve_sum[i]
+      endfor
+   endfor
+endif ;else lcblendflux = !values.d_infinity
 
 sedchi2=0d0
-
 ;; chi2 from broad band photometry
 relative = where(modelfluxneg ne 0,complement=absolute)
+absolute = absolute[where(finite(errflux[absolute]))]
 
 ;; gross. there has to be a more elegant way...
 if absolute[0] ne -1 then sedchi2 += exofast_like(flux[absolute]-modelfluxpos[absolute],0d0,errflux[absolute]*errscale,/chi2)
@@ -193,7 +225,7 @@ for i=0L, nspecfiles-1 do begin
    ;print, i, specphotchi2, spzeropoint[i], sperrscale[i], sedchi2, exofast_like(flux[absolute]-modelfluxpos[absolute],0d0,errflux[absolute]*errscale,/chi2)
 endfor
 
-;if keyword_set(derivethermal) then errflux[tessmatch] = tesserr
+;if keyword_set(derivethermal) then errflux[bandmatch] = tesserr
 
 if keyword_set(debug) or keyword_set(psname) eq 1 then begin
 
@@ -246,7 +278,6 @@ if keyword_set(debug) or keyword_set(psname) eq 1 then begin
    xmin = 0.1
    ymin = alog10(min([flux[absolute],flux[absolute]-(errflux[absolute])[where(finite(errflux[absolute]))]])) ;,reform(atmospheres,n_elements(atmospheres))]))
    ymax = alog10(max([flux[absolute],flux[absolute]+(errflux[absolute])[where(finite(errflux[absolute]))],total(sed,1)]))
-
    ;print, nspecfiles, teff, sperrscale[0], sperrscale[1], spzeropoint[0], spzeropoint[1], sedchi2
 
    if n_elements(range) eq 0 then range = dblarr(6) + !values.d_nan
@@ -282,7 +313,7 @@ if keyword_set(debug) or keyword_set(psname) eq 1 then begin
       legendcolors = colors[(lindgen(nstars)+1) mod ncolors]
       
       for i=0L, nbands-1L do begin 
-         if (i eq tessmatch) then continue ; don't plot the TESS band
+       ; if (i eq bandmatch) then continue ; don't plot the TESS band
          ;; if the observed band is some combination of more than one but not all stars
          if total(abs(blend[i,*])) gt 1 and total(blend[i,*]) ne nstars then begin
             starstr = strjoin(starnames[where(blend[i,*] eq 1)],'+')
@@ -367,7 +398,7 @@ if keyword_set(debug) or keyword_set(psname) eq 1 then begin
    res_errlo = dblarr(nbands)
    
    for i=0, nbands-1 do begin
-      if (i eq tessmatch) then continue ; don't plot the TESS band
+    ;  if (i eq bandmatch) then continue ; don't plot the TESS band
       ;; plot model bands (blue filled circles)
       relative = where(blend[i,*] eq -1)
       if relative[0] eq -1 then begin
@@ -462,7 +493,7 @@ if keyword_set(debug) or keyword_set(psname) eq 1 then begin
    endfor
 
    for i=0L, nbands-1 do begin
-      if (i eq tessmatch) then continue ; don't plot the TESS band
+      ;if (i eq bandmatch) then continue ; don't plot the TESS band
       plotsym, 0, symsize, /fill, color=pointcolors[i]
       ;; plot the data points
       oplot, [weff[i]], [residuals[i]], psym=8;, color=pointcolors[i]
@@ -507,7 +538,7 @@ if keyword_set(debug) or keyword_set(psname) eq 1 then begin
       
       startxt = strarr(nbands)
       for i=0L, nbands-1 do begin
-         if (i eq tessmatch) then continue ; don't plot the TESS band
+        ; if (i eq bandmatch) then continue ; don't plot the TESS band
          startxt[i] = strjoin(strtrim(where(blend[i,*]),2),',')
       endfor
 
@@ -524,8 +555,10 @@ if keyword_set(debug) or keyword_set(psname) eq 1 then begin
    set_plot, mydevice
     cgPS2PDF, psname, unix_convert_cmd='ps2pdf -dPDFsettings=/printer -dEPSCrop', /showcmd
 end
-sedarr = [sedchi2, thermal]
-return, sedarr
+
+;sedarr = [sedchi2, thermal, lcblendflux] ;, blendflux]
+sed_struct.sedchi2 = sedchi2
+return, sed_struct
 
 end
 

@@ -931,7 +931,7 @@ if file_test(ss.mistsedfile) or file_test(ss.fluxfile) or file_test(ss.sedfile) 
                               atmospheres=atmospheres, wavelength=wavelength,$
                               range=ss.sedrange)
    endif else if file_test(ss.sedfile) then begin
-      sedarr = exofast_multised(teffsed, ss.star.logg.value,fehsed, $
+      sed_struct = exofast_multised(teffsed, ss.star.logg.value,fehsed, $
                                   ss.star.av.value, $
                                   ss.star.distance.value, lstarsed, $
                                   ss.star[0].errscale.value, $
@@ -939,18 +939,18 @@ if file_test(ss.mistsedfile) or file_test(ss.fluxfile) or file_test(ss.sedfile) 
                                   debug=ss.debug, psname=epsname,$
                                   range=ss.sedrange,specphotpath=ss.specphotpath, $
                                   sperrscale=ss.specphot.sperrscale.value,$
-                                  spzeropoint=ss.specphot.spzeropoint.value, derivethermal=ss.derivethermal)
+                                  spzeropoint=ss.specphot.spzeropoint.value, derivethermal=ss.derivethermal, $
+								  dbstarndx=ss.dilutestarndx, dbbandnames=ss.band[*ss.dilutebandndx].name)
+      sedchi2 += sed_struct.sedchi2
 
-      sedchi2 += sedarr[0]
-      
-      if keyword_set(ss.derivethermal) then begin
-         if finite(sedarr[1]) then begin
-            thermndx = where(ss.band[ss.transit[*].bandndx].label eq 'TESS')
-            ss.band[ss.transit[thermndx].bandndx].thermal.value = sedarr[1]
-			;print,sedarr[1],ss.band[ss.transit[thermndx].bandndx].thermal.value
-	        ;stop
+	  ;; DJS: pass derived thermal emission to the corresponding THERMAL parameter
+      ;; if dilution is being fit
+      for i=0, n_elements(sed_struct.sedthermal)-1 do begin
+         if finite(sed_struct.sedthermal[i]) then begin
+            thermndx = where(ss.band[ss.transit[*].bandndx].label eq ss.derivethermal[i])
+            ss.band[ss.transit[thermndx].bandndx].thermal.value = sed_struct.sedthermal[i]
          endif
-      endif
+      endfor
 
    endif else begin
       ;; Keivan Stassun's SED
@@ -979,7 +979,6 @@ if file_test(ss.mistsedfile) or file_test(ss.fluxfile) or file_test(ss.sedfile) 
       printandlog, 'SED penalty = ' + strtrim(sedchi2,2), ss.logname
 
 endif
-
 ;; Apply Chen & Kipping Mass-Radius relation 
 ;; http://adsabs.harvard.edu/abs/2017ApJ...834...17C
 for j=0, ss.nplanets-1 do begin
@@ -1084,12 +1083,15 @@ for j=0, ss.ntel-1 do begin
       if ss.planet[i].fitrv then begin      
          ;; rvbjd = rv.bjd ;; usually sufficient (See Eastman et al., 2013)
 
-
-
          q = ss.star[ss.planet[i].starndx].mstar.value/ss.planet[i].mpsun.value
          if rv.planet eq i then begin
             ;; time in target barycentric frame (expensive)
 ;; this needs to be debugged
+            if ss.telescope[j].label eq 'KPNO-Fairborn-sb2' then $
+			qcm=(total(ss.star[*].mstar.value) - ss.planet[i].mpsun.value)/ss.planet[i].mpsun.value $
+            else $
+            qcm = q
+
             rvbjd = bjd2target(rv.bjd, inclination=ss.planet[i].i.value, $
                                a=ss.planet[i].a.value, tp=ss.planet[i].tp.value, $
                                period=ss.planet[i].period.value, e=ss.planet[i].e.value,$
@@ -1229,10 +1231,12 @@ endfor
 
 ;; compute the stellar flux for each star in each transit band 
 ;; if dilution is being fit
+;if (*ss.dilutebandndx)[0] ne -1 then starndx = dbstarndx ; DJS
 if (*ss.dilutebandndx)[0] ne -1 then begin
    starndx = ss.dilutestarndx
    bandndx = *ss.dilutebandndx
-   starflux = deblend(ss.star[starndx].teff.value, ss.star[starndx].logg.value,$
+   if file_test(ss.sedfile) then starflux = sed_struct.lcblendflux else $
+     starflux = mistdeblend(ss.star[starndx].teff.value, ss.star[starndx].logg.value,$
                       ss.star[starndx].feh.value, ss.star[starndx].av.value, $
                       ss.star[starndx].distance.value, $
                       ss.star[starndx].lstar.value, ss.band[bandndx].name)
@@ -1240,18 +1244,24 @@ endif
 
 ;; Transit model
 for j=0L, ss.ntran-1 do begin
-
    transit = *(ss.transit[j].transitptrs)
    
    if ss.fitdilute[j] then begin
-
       matchstar = where(ss.seddeblend[j,*])
       ;; dilute transit according to other stars' SEDs
       if ss.nstars gt 1 and (matchstar[0] ne -1) then begin
          matchband = (where(*ss.dilutebandndx eq ss.transit[j].bandndx))[0]
          planetndx = ss.transit[j].pndx
          starndx = ss.planet[planetndx].starndx
-         dilute = 1d0-starflux[matchband,starndx]/total(starflux[matchband,matchstar])      
+		 ;;; DJS edit 2025-05-23 to account for "thermal emission" of secondary star in EB
+         ;if (ss.band[ss.transit[j].bandndx].thermal.value 
+		;' if (keyword_set(ss.tra) or keyword_set(ss.derivethermal) then dilute = 1d0-
+		 if ((where(ss.band[ss.transit[j].bandndx].label eq ss.derivethermal)) or (where(ss.band[ss.transit[j].bandndx].label eq ss.fitthermal)) ne -1) then begin ;include the thermal emission! 
+   		    if ss.verbose then printandlog, "Accounting for thermal emission in the deblending procedure...", ss.logname
+            if planetndx eq 0 then secstarflux = starflux[matchband,planetndx+1] else secstarflux = 0d0
+			dilute = 1d0-(starflux[matchband,starndx] + secstarflux)/total(starflux[matchband,matchstar]) 
+
+         endif else dilute = 1d0-starflux[matchband,starndx]/total(starflux[matchband,matchstar]) 
          dilutechi2 = ((ss.transit[j].dilute.value - dilute)/(dilute*0.05d0))^2   
          chi2 += dilutechi2
 

@@ -409,7 +409,7 @@ endif
    endif
 
    set_plot, mydevice
-
+   cgPS2PDF, epsname, unix_convert_cmd='ps2pdf -dPDFsettings=/printer -dEPSCrop', /showcmd
 endif
 
 return, chi2

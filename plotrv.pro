@@ -129,6 +129,7 @@ for j=0, ss.ntel-1 do begin
 
       ;; this clause is never executed
       if rv.planet eq i then begin
+
 ;; this needs to be debugged
          rvbjd = bjd2target(rv.bjd, inclination=ss.planet[i].i.value[ndx], $
                             a=ss.planet[i].a.value[ndx], tp=ss.planet[i].tp.value[ndx], $
@@ -177,19 +178,18 @@ for j=0, ss.ntel-1 do begin
    
    ;; re-populate the residual array
    rv.residuals = rv.rv - modelrv
-   
+;               (*(ss.telescope[j].rvptrs)).residuals = (rv.rv-modelrv-ss.telescope[j].gamma.value[ndx]-detrendadd)/detrendmult
+;            minoc = min((*(ss.telescope[j].rvptrs)).residuals ,max=maxoc)
    *(ss.telescope[j].rvptrs) = rv
 
 endfor
 
 for i=0, ss.nplanets-1 do begin
-   
    if ~ss.planet[i].fitrv then continue
    if rv.planet ne -1 then continue
 
    if rv.planet eq i then begin
-;; this needs to be debugged
-
+;; this needs to be debugged'
       ;; pretty model without quad, slope, or gamma
       prettymodel2 = exofast_rv(prettytime,ss.planet[i].tp.value[ndx],$
                                 ss.planet[i].period.value[ndx],0d0,ss.planet[i].K.value[ndx]*q[i],$
@@ -224,7 +224,7 @@ for i=0, ss.nplanets-1 do begin
    allminrv = min(allprettymodel,max=allmaxrv)
    for j=0, ss.ntel-1 do begin
       rv = *(ss.telescope[j].rvptrs)
-      if rv.planet ne -1 then continue
+	  if rv.planet ne -1 then continue
       
       err = sqrt(rv.err^2 + ss.telescope[j].jittervar.value[ndx])
       modelrv = exofast_rv(rv.bjd,ss.planet[i].tp.value[ndx],$
@@ -441,6 +441,8 @@ if not keyword_set(psname) then begin
    if win_state[21] eq 1 then wset, 21 $
    else window, 21, retain=2
 endif else begin
+   base = file_dirname(psname) + path_sep() + 'modelfiles' + path_sep() + file_basename(psname,'.rv2.ps')
+
    trend = (prettytime-t0)*ss.star[0].slope.value[ndx] + (prettytime-t0)^2*ss.star[0].quad.value[ndx]
    allprettymodel += trend
    exofast_forprint, prettytime, prettymodel, textout=base+'.prettymodelrv.trend.txt', format='(f0.10,x,f0.10)'
@@ -511,8 +513,13 @@ endfor
 
 if nplanetrvs gt 0L then begin
 
-   for i=0L, ss.nplanets-1 do begin
-      
+   for i=0L, ss.nplanets-1 do begin    
+      nrvs_for_planet = 0L
+	  for j=0L, ss.ntel-1 do begin
+         rv = *(ss.telescope[j].rvptrs)
+         if rv.planet eq i then nrvs_for_planet++
+      endfor
+	  if nrvs_for_planet eq 0 then continue
       prettymodel = exofast_rv(prettytime,ss.planet[i].tp.value[ndx],$
                                ss.planet[i].period.value[ndx],0d0,ss.planet[i].K.value[ndx]*q[i],$
                                ss.planet[i].e.value[ndx],ss.planet[i].omega.value[ndx]+!dpi)
@@ -534,7 +541,7 @@ if nplanetrvs gt 0L then begin
       for j=0L, ss.ntel-1 do begin
          rv = *(ss.telescope[j].rvptrs)
          if rv.planet ne i then continue
-         
+      
          ;; this needs to be debugged
          rvbjd = bjd2target(rv.bjd, inclination=ss.planet[i].i.value[ndx], $
                             a=ss.planet[i].a.value[ndx], tp=ss.planet[i].tp.value[ndx], $
@@ -553,8 +560,12 @@ if nplanetrvs gt 0L then begin
          minrv = min(rv.rv,max=maxrv)
          if minrv lt allminrv then allminrv = minrv
          if maxrv gt allmaxrv then allmaxrv = maxrv
+         if rv.planet eq i then begin
+		    allmaxrv = allmaxrv - ss.telescope[j].gamma.value[ndx]
+	        allminrv = allminrv; * q[i]
+         endif
       endfor
-      
+
 ;   xtitle1='!3' + exofast_textoidl('Phase + (T_P - T_C)/P + 0.25',font=font)
 ;   xtitle2='!3' + exofast_textoidl('BJD_{TDB} - ' + string(bjd0,format='(i7)'),font=font)
 ;   plot, [0], [0], xtitle=xtitle1, psym=8, ytitle='!3RV (m/s)', xrange=xrange, yrange=yrange
@@ -563,7 +574,7 @@ if nplanetrvs gt 0L then begin
             yrange=[allminrv,allmaxrv], $
             ytitle='!3RV (m/s)', position=position1,xtickformat='(A1)'
       
-      oplot, prettyphase, prettymodel,  color=red
+      oplot, prettyphase[sorted], prettymodel[sorted],  color=red
       
       use = where(legendndx[i,*],nuse)
       if nuse gt 1 then exofast_legend, ss.telescope[use].label, color=colors[(indgen(ss.ntel) mod ncolors)[use]],/bottom,/right,psym=symbols[(indgen(ss.ntel) mod nsymbols)[use]], /useplotsym, charsize=0.5, fill=fills[(indgen(ss.ntel) mod nfills)[use]]
@@ -571,7 +582,8 @@ if nplanetrvs gt 0L then begin
       for j=0L, ss.ntel-1 do begin
          rv = *(ss.telescope[j].rvptrs)
          if rv.planet eq i then begin
-            
+
+			
             ;; this needs to be debugged
             rvbjd = bjd2target(rv.bjd, inclination=ss.planet[i].i.value[ndx], $
                                a=ss.planet[i].a.value[ndx], tp=ss.planet[i].tp.value[ndx], $
@@ -624,7 +636,8 @@ if nplanetrvs gt 0L then begin
          rv = *(ss.telescope[j].rvptrs)
          
          if rv.planet eq i then begin
-            
+
+			            
             rvbjd = bjd2target(rv.bjd, inclination=ss.planet[i].i.value[ndx], $
                                a=ss.planet[i].a.value[ndx], tp=ss.planet[i].tp.value[ndx], $
                                period=ss.planet[i].period.value[ndx], e=ss.planet[i].e.value[ndx],$
@@ -646,7 +659,7 @@ if keyword_set(psname) then begin
    device, /close
    set_plot, mydevice
    exofast_fixps, psname
-   cgPS2PDF,psname
+   cgPS2PDF, psname, unix_convert_cmd='ps2pdf -dPDFsettings=/printer', /showcmd
 endif
 
 end
