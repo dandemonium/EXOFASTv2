@@ -545,7 +545,7 @@ if keyword_set(debug) or keyword_set(psname) eq 1 then begin
 ;		 endfor
  ;     endfor
 
-	  ;; model flux file for each star
+	  ;; model flux files for each star
       tmpflux = dblarr(nstars, nbands)
 	  
       for j=0, nstars - 1 do begin
@@ -553,18 +553,25 @@ if keyword_set(debug) or keyword_set(psname) eq 1 then begin
          for i=0L, nbands-1 do begin
             tmpflux[j,i] = total(sed[j,*]*filter_curves[i,*])/filter_curve_sum[i]
          endfor
+		 ;; bandpass-weighted model fluxes
          exofast_forprint, sedbands, weff, widtheff, flux, errflux, tmpflux[j,*], flux-tmpflux[j,*], startxt, $
-		                   textout=residualfilename+'.star_'+string(j)+ '.fluxes.txt', $
-                           comment='# Filtername, Center wavelength (um), half bandpass (um), obs flux, obs err, ' + $
-						   'model flux, O-C flux, star index', $
-                           format='(a20,x,f0.6,x,f0.6,x,e0.6,x,e0.6,x,e0.6,x,a)'
-	  endfor
+		                   textout=residualfilename+'.fluxes.star_'+strtrim(j,1)+'.txt', $
+                           comment='# Filtername, Center wavelength (um), half bandpass (um), ' + $
+						           'obs. lamflam (cgs), obs. err (cgs), ' + $
+						   'model lamflam (cgs), O-C lamflam (cgs), star index', $
+                           format='(a,x,f0.6,x,f0.6,x,e0.6,x,e0.6,x,e0.6,x,e0.6,x,a)'
+		 ;; interpolated model atmospheres			   
+         exofast_forprint, wavelength, sed[j,*], textout=residualfilename+'.ng_atmosphere.star_'+strtrim(j,1)+'.txt', $
+                           comment='# note: plots use alog10(smooth(lamflam, 10))' + string(10B) + $
+						           '# wavelength (um), lamflam (cgs)', format='(f0.6,x,f0.6)'
+	  endfor 
+
       ;; file containing total model flux from all stars in each band
       exofast_forprint, sedbands, weff, widtheff, flux, errflux, total(tmpflux,1), flux - total(tmpflux,1), startxt, $
 	                    textout=residualfilename+'.sed.residuals.txt', $
-                        comment='# Filtername, Center wavelength (um), half bandpass (um), obs flux, obs err, ' + $
-						'model flux, O-C flux, star index', $
-                        format='(a20,x,f0.6,x,f0.6,x,e0.6,x,e0.6,x,e0.6,x,e0.6,x,a)'
+                        comment='# Filtername, Center wavelength (um), half bandpass (um), obs. lamflam (cgs), '+ $ 
+						'obs. err (cgs), model lamflam (cgs), O-C lamflam (cgs), star index', $
+                        format='(a,x,f0.6,x,f0.6,x,e0.6,x,e0.6,x,e0.6,x,e0.6,x,a)'
    endif
    set_plot, mydevice
     cgPS2PDF, psname, unix_convert_cmd='ps2pdf -dPDFsettings=/printer -dEPSCrop', /showcmd
