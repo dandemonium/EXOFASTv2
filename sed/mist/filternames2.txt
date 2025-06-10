@@ -102,7 +102,7 @@ Unsupported IRAC_5.8 Spit58 Unsupported
 Unsupported IRAC_8.0 Spit80 Unsupported
 Unsupported J129 Unsupported Unsupported
 Unsupported Kepler_D51 Unsupported Unsupported
-Unsupported Kepler_Kp Kepler Unsupported
+Kepler Kepler_Kp Kepler Kepler_Kepler.K
 Unsupported LSST_g Unsupported Unsupported
 Unsupported LSST_i Unsupported Unsupported
 Unsupported LSST_r Unsupported Unsupported

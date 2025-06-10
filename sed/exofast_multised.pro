@@ -398,7 +398,6 @@ if keyword_set(debug) or keyword_set(psname) eq 1 then begin
    res_errlo = dblarr(nbands)
    
    for i=0, nbands-1 do begin
-    ;  if (i eq bandmatch) then continue ; don't plot the TESS band
       ;; plot model bands (blue filled circles)
       relative = where(blend[i,*] eq -1)
       if relative[0] eq -1 then begin
@@ -534,23 +533,26 @@ if keyword_set(debug) or keyword_set(psname) eq 1 then begin
       device, encapsulated=0
       
       ;; create a residual file
-      residualfilename = file_dirname(psname) + path_sep() + 'modelfiles' + path_sep() + '.residuals.txt'
+      residualfilename = file_dirname(psname) + path_sep() + 'modelfiles' + path_sep() 
       
       startxt = strarr(nbands)
       for i=0L, nbands-1 do begin
-        ; if (i eq bandmatch) then continue ; don't plot the TESS band
          startxt[i] = strjoin(strtrim(where(blend[i,*]),2),',')
       endfor
 
 ;	     for j=0, nstars - 1 do begin
-;	        exofast_forprint, sedbands[i], sed[j,*]*filter_curves[i,*]/filter_curve_sum[i], textout=residualfilename+'_'+string(j)
+;	        exofast_forprint, j, sedbands[i], sed[j,*]*filter_curves[i,*]/filter_curve_sum[i], textout=residualfilename+'_'+string(j)
 ;		 endfor
  ;     endfor
       for i=0, nstars - 1 do begin
-      exofast_forprint, sedbands, weff, widtheff, sed[i,*]*filter_curves/filter_curve_sum, errflux, flux, flux-sed[i]*filter_curves/filter_curve_sum, startxt, textout=residualfilename+'_'+string(i), $
-                        comment='# Filtername, Center wavelength (um), half bandpass (um), flux, error, flux, residuals (erg/s/cm^2), star indices', $
+         exofast_forprint, sedbands, weff, widtheff, flux, errflux, sed[i,*]*filter_curves/filter_curve_sum, startxt, textout=residualfilename+'.star_'+string(i)+ '.fluxes.txt', $
+                           comment='# Filtername, Center wavelength (um), half bandpass (um), obs flux, obs err, model flux, star index', $
+                           format='(a20,x,f0.6,x,f0.6,x,e0.6,x,e0.6,x,e0.6,x,a)'
+	  endfor
+      exofast_forprint, sedbands, weff, widtheff, flux, errflux, total(sed*filter_curves)/filter_curve_sum, flux-total(sed*filter_curves)/filter_curve_sum, startxt, $
+	                    textout=residualfilename+'.sed.residuals.txt', $
+                        comment='# Filtername, Center wavelength (um), half bandpass (um), obs flux, obs err, model flux, star index', $
                         format='(a20,x,f0.6,x,f0.6,x,e0.6,x,e0.6,x,e0.6,x,e0.6,x,a)'
-      endfor
    endif
    set_plot, mydevice
     cgPS2PDF, psname, unix_convert_cmd='ps2pdf -dPDFsettings=/printer -dEPSCrop', /showcmd
