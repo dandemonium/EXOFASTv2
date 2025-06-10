@@ -544,14 +544,26 @@ if keyword_set(debug) or keyword_set(psname) eq 1 then begin
 ;	        exofast_forprint, j, sedbands[i], sed[j,*]*filter_curves[i,*]/filter_curve_sum[i], textout=residualfilename+'_'+string(j)
 ;		 endfor
  ;     endfor
-      for i=0, nstars - 1 do begin
-         exofast_forprint, sedbands, weff, widtheff, flux, errflux, modelfluxpos, modelfluxneg, startxt, textout=residualfilename+'.star_'+string(i)+ '.fluxes.txt', $
-                           comment='# Filtername, Center wavelength (um), half bandpass (um), obs flux, obs err, model sum flux, model diff. flux, star index', $
+
+	  ;; model flux file for each star
+      tmpflux = dblarr(nstars, nbands)
+	  
+      for j=0, nstars - 1 do begin
+	  
+         for i=0L, nbands-1 do begin
+            tmpflux[j,i] = total(sed[j,*]*filter_curves[i,*])/filter_curve_sum[i]
+         endfor
+         exofast_forprint, sedbands, weff, widtheff, flux, errflux, tmpflux[j,*], flux-tmpflux[j,*], startxt, $
+		                   textout=residualfilename+'.star_'+string(j)+ '.fluxes.txt', $
+                           comment='# Filtername, Center wavelength (um), half bandpass (um), obs flux, obs err, ' + $
+						   'model flux, O-C flux, star index', $
                            format='(a20,x,f0.6,x,f0.6,x,e0.6,x,e0.6,x,e0.6,x,a)'
 	  endfor
-      exofast_forprint, sedbands, weff, widtheff, flux, errflux, total(sed*filter_curves)/filter_curve_sum, flux-total(sed*filter_curves)/filter_curve_sum, startxt, $
+      ;; file containing total model flux from all stars in each band
+      exofast_forprint, sedbands, weff, widtheff, flux, errflux, total(tmpflux,1), flux - total(tmpflux,1), startxt, $
 	                    textout=residualfilename+'.sed.residuals.txt', $
-                        comment='# Filtername, Center wavelength (um), half bandpass (um), obs flux, obs err, model flux, star index', $
+                        comment='# Filtername, Center wavelength (um), half bandpass (um), obs flux, obs err, ' + $
+						'model flux, O-C flux, star index', $
                         format='(a20,x,f0.6,x,f0.6,x,e0.6,x,e0.6,x,e0.6,x,e0.6,x,a)'
    endif
    set_plot, mydevice
