@@ -533,7 +533,7 @@ if keyword_set(debug) or keyword_set(psname) eq 1 then begin
       device, encapsulated=0
       
       ;; create a residual file
-      residualfilename = file_dirname(psname) + path_sep() + 'modelfiles' + path_sep() 
+      residualfilename = file_dirname(psname) + path_sep() + 'modelfiles' + path_sep() + file_basename(psname,'.sed.eps')
       
       startxt = strarr(nbands)
       for i=0L, nbands-1 do begin
@@ -545,8 +545,8 @@ if keyword_set(debug) or keyword_set(psname) eq 1 then begin
 ;		 endfor
  ;     endfor
       for i=0, nstars - 1 do begin
-         exofast_forprint, sedbands, weff, widtheff, flux, errflux, sed[i,*]*filter_curves/filter_curve_sum, startxt, textout=residualfilename+'.star_'+string(i)+ '.fluxes.txt', $
-                           comment='# Filtername, Center wavelength (um), half bandpass (um), obs flux, obs err, model flux, star index', $
+         exofast_forprint, sedbands, weff, widtheff, flux, errflux, modelfluxpos, modelfluxneg, startxt, textout=residualfilename+'.star_'+string(i)+ '.fluxes.txt', $
+                           comment='# Filtername, Center wavelength (um), half bandpass (um), obs flux, obs err, model sum flux, model diff. flux, star index', $
                            format='(a20,x,f0.6,x,f0.6,x,e0.6,x,e0.6,x,e0.6,x,a)'
 	  endfor
       exofast_forprint, sedbands, weff, widtheff, flux, errflux, total(sed*filter_curves)/filter_curve_sum, flux-total(sed*filter_curves)/filter_curve_sum, startxt, $
