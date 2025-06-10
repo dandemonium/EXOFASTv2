@@ -80,7 +80,7 @@ function mkss, priorfile=priorfile, $
                fitspline=fitspline, splinespace=splinespace, $
                fitramp=fitramp, fitwavelet=fitwavelet, $            
                ;; reparameterization inputs
-               fitlogmp=fitlogmp,$
+               fitlogmp=fitlogmp, fitrp=fitrp, $
                novcve=novcve, nochord=nochord, fitsign=fitsign, $
                fittt=fittt, earth=earth, $
                ;; plotting inputs
@@ -260,6 +260,10 @@ if n_elements(fitdt) ne nplanets and n_elements(fitdt) gt 1 then begin
 endif
 if n_elements(fitlogmp) ne nplanets and n_elements(fitlogmp) gt 1 then begin
    printandlog, "FITLOGMP must have NPLANETS (" + strtrim(nplanets,2) + ") elements",logname
+   return, -1
+endif
+if n_elements(fitrp) ne nplanets and n_elements(fitrp) gt 1 then begin
+   printandlog, "fitrp must have NPLANETS (" + strtrim(nplanets,2) + ") elements",logname
    return, -1
 endif
 if n_elements(novcve) ne nplanets and n_elements(novcve) gt 1 then begin
@@ -672,6 +676,7 @@ endif else if n_elements(fittt) eq 1 then begin
 endif  
 
 if n_elements(fitlogmp) eq 0 then fitlogmp = bytarr(nplanets>1)
+if n_elements(fitrp) eq 0 then fitrp = bytarr(nplanets>1)
 
 if n_elements(chen) ne nplanets or nplanets eq 0 then chen = fittran xor fitrv
 if n_elements(i180) ne nplanets or nplanets eq 0 then i180 = bytarr(nplanets>1)
@@ -2393,6 +2398,7 @@ ss = create_struct('star',replicate(star,nstars>1),$
                    'fitdt',fitdt,$
                    'rossiter',rossiter,$
                    'fitlogmp',fitlogmp,$
+				   'fitrp',fitrp,$
                    'rejectflatmodel',rejectflatmodel,$
                    'noprimary',noprimary,$
                    'requiresecondary',requiresecondary,$
@@ -2642,7 +2648,11 @@ for i=0, nplanets-1 do begin
       ss.planet[i].logmp.fit = 1
       ss.planet[i].mpsun.fit = 0
    endif
-
+   if fitrp[i] then begin
+      ss.planet[i].rpsun.fit = 1
+	  ss.planet[i].rpsun.derive = 0 
+	  ss.planet[i].p.fit = 0
+   endif
 endfor
 
 for i=0, nband-1 do begin

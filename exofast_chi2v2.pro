@@ -336,6 +336,13 @@ if nbad gt 0 then begin
    return, !values.d_infinity
 endif
 
+;; 0 < rpsun < 2000
+bad = where(ss.planet.rpsun.value lt 0d0 or ss.planet.rpsun.value gt 2000d0,nbad)
+if nbad gt 0 then begin
+   if ss.debug or ss.verbose then printandlog, 'rpsun is bad (' + strtrim(ss.planet[bad].rpsun.value,2) + ')', ss.logname
+   return, !values.d_infinity
+endif
+
 if ss.nastrom gt 0 then begin
    ;; 0.01 < astrometric error scaling < 100
    bad = where(ss.astrom.astromscale.value lt 1d-2 or ss.astrom.astromscale.value  gt 1d2, nbad)

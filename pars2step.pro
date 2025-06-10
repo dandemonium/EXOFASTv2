@@ -301,6 +301,8 @@ endelse
       if ~ss.planet[i].rpearth.userchanged then $
          ss.planet[i].rpearth.value = ss.planet[i].p.value*ss.star[ss.planet[i].starndx].rstar.value/rearth
       ss.planet[i].rpearth.userchanged = 1B
+;   endif else if ss.planet[i].rpsun.userchanged then begin
+;      ss.planet[i].p.value = ss.planet[i].rpsun.value/ss.star[ss.planet[i].starndx].rstar.value
    endif else if ss.planet[i].mpearth.userchanged then begin 
       ss.planet[i].rpearth.value = massradius_chen(ss.planet[i].mpearth.value)
       ss.planet[i].p.value = ss.planet[i].rpearth.value*rearth/ss.star[ss.planet[i].starndx].rstar.value

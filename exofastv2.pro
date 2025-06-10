@@ -745,6 +745,11 @@
 ;             where the small-planet volume is infinite. It also
 ;             excludes negative masses which biases the mass high.
 ;
+;  FITRP    - By default, planet radius is derived from P and RSTAR. Set this
+;             keyword to fit for RPSUN and derive P from RPSUN and RSTAR. This may
+;             allow tighter linking between RPSUN and a stellar RSTAR, but may be
+;             problematic for low SNR transits where the small-planet volume is infinite. 
+;
 ;  NOVCVE   - When only transits are fit, eccentricity is
 ;             parameterized as VCVE. Set this to keep the usual
 ;             sqrt(e)cos(omega) sqrt(e)sin(omega) parameterization.
@@ -1191,7 +1196,7 @@ pro exofastv2, priorfile=priorfile, $
                fitspline=fitspline, splinespace=splinespace, $
                fitramp=fitramp, fitwavelet=fitwavelet, $
                ;; reparameterization inputs
-               fitlogmp=fitlogmp,$
+               fitlogmp=fitlogmp, fitrp=fitrp, $
                novcve=novcve, nochord=nochord, fitsign=fitsign, $
                fittt=fittt, earth=earth, $
                ;; plotting inputs
@@ -1261,7 +1266,7 @@ if lmgr(/vm) or lmgr(/runtime) then begin
              noprimary=noprimary, requiresecondary=requiresecondary,$
              fitspline=fitspline, splinespace=splinespace, $
              fitramp=fitramp, fitwavelet=fitwavelet, $              
-             fitlogmp=fitlogmp,$
+             fitlogmp=fitlogmp, fitrp=fitrp, $
              novcve=novcve, nochord=nochord, fitsign=fitsign, $
              fittt=fittt, earth=earth, $             
              transitrange=transitrange,rvrange=rvrange,$
@@ -1412,7 +1417,7 @@ ss = mkss(priorfile=priorfile, $
           fitspline=fitspline, splinespace=splinespace, $
           fitramp=fitramp, fitwavelet=fitwavelet, $            
           ;; reparameterization inputs
-          fitlogmp=fitlogmp,$
+          fitlogmp=fitlogmp, fitrp=fitrp, $
           novcve=novcve, nochord=nochord, fitsign=fitsign, $
           fittt=fittt, earth=earth, $
           ;; plotting inputs
@@ -1538,7 +1543,7 @@ if nthreads gt 1 then begin
          'noprimary=noprimary, requiresecondary=requiresecondary,'+$
          'fitspline=fitspline, splinespace=splinespace,'+$
          'fitramp=fitramp, fitwavelet=fitwavelet,'+$
-         'fitlogmp=fitlogmp,'+$
+         'fitlogmp=fitlogmp, fitrp=fitrp,'+$
          'novcve=novcve, nochord=nochord, fitsign=fitsign,'+$
          'fittt=fittt, earth=earth,'+$
          'transitrange=transitrange,rvrange=rvrange,'+$
@@ -1772,7 +1777,7 @@ if nthreads gt 1 then begin
          'noprimary=noprimary, requiresecondary=requiresecondary,'+$
          'fitspline=fitspline, splinespace=splinespace,'+$
          'fitramp=fitramp, fitwavelet=fitwavelet,'+$
-         'fitlogmp=fitlogmp,'+$
+         'fitlogmp=fitlogmp, fitrp=fitrp,'+$
          'novcve=novcve, nochord=nochord, fitsign=fitsign,'+$
          'fittt=fittt, earth=earth,'+$
          'transitrange=transitrange,rvrange=rvrange,'+$
@@ -1892,7 +1897,7 @@ mcmcss = mkss(priorfile=priorfile, $
               fitspline=fitspline, splinespace=splinespace, $
               fitramp=fitramp, fitwavelet=fitwavelet, $            
               ;; reparameterization inputs
-              fitlogmp=fitlogmp,$
+              fitlogmp=fitlogmp, fitrp=fitrp, $
               novcve=novcve, nochord=nochord, fitsign=fitsign, $
               fittt=fittt, earth=earth, $
               ;; plotting inputs
