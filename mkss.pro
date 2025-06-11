@@ -37,7 +37,9 @@
 ;
 ; MODIFICATION HISTORY
 ; 
-;  2023/12 -- Documentation cleanup.
+;  2023/12 -- JDE: Documentation cleanup.
+;  2025/06 -- DJS: Derive thermal emission; add NextGen deblending; add
+;                  limb-darkened secondary eclipses.
 ;-
 function mkss, priorfile=priorfile, $
                prefix=prefix,$
@@ -93,7 +95,7 @@ function mkss, priorfile=priorfile, $
                silent=silent, $
                chi2func=chi2func, $
                logname=logname, $
-               best=best, derivethermal=derivethermal
+               best=best, derivethermal=derivethermal, limbdarksecondary=limbdarksecondary
 
 
 if n_elements(transitrange) eq 0 then transitrange=dblarr(6)+!values.d_nan
@@ -326,6 +328,7 @@ endif else begin
    ntran = 0
    tranpath = ''
 endelse
+if ~keyword_set(limbdarksecondary) then limbdarksecondary=strarr(ntran)
 
 if n_elements(noclaret) eq 1 then begin
    noclaret = bytarr(ntran>1) + keyword_set(noclaret)
@@ -1904,6 +1907,23 @@ u2.scale = 0.15d0
 if nplanets eq 0 then u2.derive = 0 $
 else u2.fit = 1
 
+u1s = parameter
+u1s.description = 'Linear limb-darkening coeff for secondary'
+u1s.latex = 'u_{1,S}'
+u1s.label = 'u1s'
+u1s.scale = 0.15d0
+u1s.fit = 0
+u1s.derive = 0
+;else u1s.fit  1
+
+u2s = parameter
+u2s.description = 'Quadratic limb-darkening coeff for secondary'
+u2s.latex = 'u_{2,S}'
+u2s.label = 'u2s'
+u2s.scale = 0.15d0
+u2s.fit = 0
+u2s.derive = 0
+
 u3 = parameter
 u3.description = 'Non-linear limb-darkening coeff'
 u3.latex = 'u_{3}'
@@ -2252,6 +2272,8 @@ band = create_struct(u1.label,u1,$ ;; linear limb darkening
                      u2.label,u2,$ ;; quadratic limb darkening
                      u3.label,u3,$ ;; 1st non-linear limb darkening
                      u4.label,u4,$ ;; 2nd non-linear limb darkening
+					 u1s.label,u1s,$ ;; linear limb darkening for secondary
+					 u2s.label,u2s,$ ;; quadratic limb darkening for secondary
                      thermal.label,thermal,$ ;; thermal emission
                      ;dilute.label,dilute,$   ;; dilution
                      reflect.label,reflect,$ ;; reflection
@@ -2309,7 +2331,8 @@ transit = create_struct(variance.label,variance,$ ;; jitter
                         'fitspline',0B,$
                         'splinespace',0.75d0,$
                         'fitramp',0B,$
-                        'label','') 
+                        'label','',$
+						'limbdarksecondary',0B) 
 
 doptom = create_struct('dtptrs',ptr_new(),$
                        'rootlabel','Doppler Tomography Parameters:',$
@@ -2438,7 +2461,8 @@ ss = create_struct('star',replicate(star,nstars>1),$
                    'rvrange',rvrange,$
                    'sedrange',sedrange,$
                    'emrange',emrange,$
-                   'derivethermal',derivethermal)
+                   'derivethermal',derivethermal,$
+				   'limbdarksecondary',limbdarksecondary)
 
 ;)
 
@@ -2675,11 +2699,22 @@ for i=0, nband-1 do begin
    endelse
       
    ldcoeffs = quadld(ss.star[0].logg.value, ss.star[0].teff.value, ss.star[0].feh.value, bands[i])
+
    if finite(ldcoeffs[0]) then ss.band[i].u1.value = ldcoeffs[0] $
    else ss.band[i].u1.value = 0d0
    if finite(ldcoeffs[1]) then ss.band[i].u2.value = ldcoeffs[1] $
    else ss.band[i].u2.value = 0d0
 
+   if keyword_set(limbdarksecondary) then begin
+      ss.band[i].u1s.fit = 1B
+	  ss.band[i].u2s.fit = 2B
+      ldcoeffs_sec = quadld(ss.star[1].logg.value, ss.star[1].teff.value, ss.star[1].feh.value, bands[i])
+      if finite(ldcoeffs_sec[0]) then ss.band[i].u1s.value = ldcoeffs_sec[0] $
+      else ss.band[i].u1s.value = 0d0
+      if finite(ldcoeffs_sec[1]) then ss.band[i].u2s.value = ldcoeffs_sec[1] $
+      else ss.band[i].u2s.value = 0d0
+   endif
+   
    match = where(fitthermal eq ss.band[i].name)
    if match[0] ne -1 then begin
       ss.band[i].thermal.fit = 1B
@@ -2707,6 +2742,20 @@ for i=0, nband-1 do begin
 		    "(see chi2v2.pro, multised.pro, derivepars.pro, and getmcmcscale.pro for modifications to undo otherwise).",logname
    endif
 
+   match = where(limbdarksecondary eq 1)
+   if match[0] ne -1 then begin
+      if ~keyword_set(silent) then begin
+	     printandlog, "[MKSS] Fitting limb-darkened secondary eclipses for the following light curves:", logname
+         for j=0, n_elements(match)-1 do printandlog, string(match[j],tranfiles[j],format='(i2,x,a)'),logname
+         printandlog, "[MKSS]: WARNING!: Assuming planet 0 is linked to star 1 for limb-darkened secondary eclipses.", logname
+      endif
+	  if ((fitthermal eq ['']) and (derivethermal eq [''])) then begin
+         printandlog, "[MKSS] ERROR: To fit limb-darkened secondary eclipses, then either FITTHERMAL or DERIVETHERMAL"+ $
+                   " must be set when FITLIMBDARKSEC is set.", logname
+         return, -1
+      endif
+   endif
+   
    match = where(fitreflect eq ss.band[i].name)
    if match[0] ne -1 then begin
       ss.band[i].reflect.fit = 1B
@@ -2803,6 +2852,7 @@ if ntran gt 0 then begin
       endif
 
       ss.transit[i].claret = ~keyword_set(noclaret[i])
+	  ss.transit[i].limbdarksecondary = keyword_set(limbdarksecondary[i])
       ss.transit[i].fitspline = fitspline[i]
       ss.transit[i].splinespace = splinespace[i]
       ss.transit[i].fitramp = fitramp[i]

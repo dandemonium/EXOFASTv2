@@ -120,8 +120,9 @@ for i=0, ss.nplanets-1 do begin
    ss.planet[i].mpearth.value = ss.planet[i].mpsun.value/mearth ;; m_earth
    ss.planet[i].q.value = ss.planet[i].mpsun.value/ss.star[ss.planet[i].starndx].mstar.value                           ;; unitless
 
-   ;; derive the radius of the planet   
-   ss.planet[i].rpsun.value = ss.planet[i].p.value*ss.star[ss.planet[i].starndx].rstar.value ;; r_sun
+   ;; derive the radius of the planet
+   if ss.planet[i].rpsun.fit then ss.planet[i].p.value = ss.planet[i].rpsun.value/ss.star[ss.planet[i].starndx].rstar.value $
+   else ss.planet[i].rpsun.value = ss.planet[i].p.value*ss.star[ss.planet[i].starndx].rstar.value ;; r_sun
    ss.planet[i].rp.value = ss.planet[i].rpsun.value/rjup ;; r_jupiter
    ss.planet[i].rpearth.value = ss.planet[i].rpsun.value/rearth ;; r_earth
 

@@ -1357,7 +1357,8 @@ for j=0L, ss.ntran-1 do begin
                                     rstar=ss.star[ss.planet[i].starndx].rstar.value/AU,$
                                     ;x1=x1,y1=y1,z1=z1,$
                                     au=au,$
-                                    c=ss.constants.c/ss.constants.au*ss.constants.day) - 1d0)
+                                    c=ss.constants.c/ss.constants.au*ss.constants.day,$
+									u_sec=[band.u1s.value, band.u2s.value]) - 1d0)
 
          modelflux += tmpmodelflux
 
@@ -1372,11 +1373,11 @@ for j=0L, ss.ntran-1 do begin
       endif
    endif
 
-   ;; ellipsoidal variations -- commented out by DJS; eBEER formulae put in exofast_tran.pro
-;   if band.ellipsoidal.value ne 0d0 then begin
-;      minperiod = min(ss.planet.period.value,ndx)
-;      modelflux = modelflux * (1d0 - band.ellipsoidal.value/1d6*cos(2d0*!dpi*(transitbjd-ss.planet[ndx].tc.value)/(ss.planet[ndx].period.value/2d0)))
-;   endif
+   ;; ellipsoidal variations -- see also exofast_tran.pro
+   if band.ellipsoidal.value ne 0d0 then begin
+      minperiod = min(ss.planet.period.value,ndx)
+      modelflux = modelflux * (1d0 - band.ellipsoidal.value/1d6*cos(2d0*!dpi*(transitbjd-ss.planet[ndx].tc.value)/(ss.planet[ndx].period.value/2d0)))
+   endif
 
    ;; now integrate the model points (before detrending)
    ;; Riemann integration beats trapezoidal and simpsons wins when

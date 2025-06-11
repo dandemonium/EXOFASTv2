@@ -132,5 +132,4 @@ if keyword_set(epsname) then begin
    device, /close
    device, encapsulated=0
 endif
-
 end
