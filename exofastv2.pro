@@ -509,6 +509,10 @@
 ;  STARNDX   - An NPLANETS long array that specifies the index of the
 ;              star each planet orbits. The default is 0 for all.
 ; 
+;  LINKSTARNDX - An NPLANETS long array that specifies the index of the
+;              star structure to which the planet structure is linked.
+;              Used for limb-darkened secondary eclipses. The default is -1 for all.
+;
 ;  SEDDEBLEND- An NTRANSITSxNSTARS boolean array specifying which
 ;              transits are blended with which stars. These will
 ;              automatically be deblended according to the SED models
@@ -1232,7 +1236,7 @@ pro exofastv2, priorfile=priorfile, $
                nocovar=nocovar, $
                plotonly=plotonly, bestonly=bestonly, $
                badstart=badstart,derivethermal=derivethermal, $
-			   limbdarksecondary=limbdarksecondary
+			   limbdarksecondary=limbdarksecondary, linkstarndx=linkstarndx
                
 ;; this is the stellar system structure
 COMMON chi2_block, ss
@@ -1298,7 +1302,7 @@ if lmgr(/vm) or lmgr(/runtime) then begin
              nocovar=nocovar,$
              plotonly=plotonly, bestonly=bestonly,$
              logname=logname, derivethermal=derivethermal, $
-             limbdarksecondary=limbdarksecondary
+             limbdarksecondary=limbdarksecondary, linkstarndx=linkstarndx
 
 endif
 
@@ -1378,7 +1382,8 @@ if nplanets ne 0 and keyword_set(refinestar) then begin
              starndx=starndx,priorfile=priorfile, $
              teffemfloor=teffemfloor, fehemfloor=fehemfloor, rstaremfloor=rstaremfloor,ageemfloor=ageemfloor,$
              yy=yy, torres=torres, nomist=nomist, parsec=parsec, mann=mann, logname=logname, debug=stardebug, verbose=verbose, $
-             mkgif=mkgif,chi2func=chi2func,prefix=prefix,derivethermal=derivethermal, limbdarksecondary=limbdarksecondary)
+             mkgif=mkgif,chi2func=chi2func,prefix=prefix,derivethermal=derivethermal, limbdarksecondary=limbdarksecondary, $
+			 linkstarndx=linkstarndx)
    if (size(ss))[2] ne 8 then return
 
    pars = str2pars(ss,scale=scale,name=starparnames, angular=angular)
@@ -1443,7 +1448,7 @@ ss = mkss(priorfile=priorfile, $
           ;; internal inputs
           chi2func=chi2func, $
           logname=logname,derivethermal=derivethermal,$
-		  limbdarksecondary=limbdarksecondary)
+		  limbdarksecondary=limbdarksecondary, linkstarndx=linkstarndx)
 
 if (size(ss))[2] ne 8 then begin
    badstart=1
@@ -1568,7 +1573,7 @@ if nthreads gt 1 then begin
          '/silent,'+$
          'chi2func=chi2func,'+$
          'logname=logname, derivethermal=derivethermal,'+$
-		 'limbdarksecondary=limbdarksecondary)'
+		 'limbdarksecondary=limbdarksecondary, linkstarndx=linkstarndx)'
    endfor
 endif
 
@@ -1803,7 +1808,7 @@ if nthreads gt 1 then begin
          '/silent,'+$
          'chi2func=chi2func,'+$
          'logname=logname, derivethermal=derivethermal,'+$
-		 'limbdarksecondary=limbdarksecondary)'
+		 'limbdarksecondary=limbdarksecondary, linkstarndx=linkstarndx)'
    endfor
 endif
 
@@ -1929,7 +1934,7 @@ mcmcss = mkss(priorfile=priorfile, $
               chi2func=chi2func, $
               logname=logname, $
               best=best, derivethermal=derivethermal, $
-			  limbdarksecondary=limbdarksecondary)
+			  limbdarksecondary=limbdarksecondary, linkstarndx=linkstarndx)
 
 if (size(mcmcss))[2] ne 8 then return
 

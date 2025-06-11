@@ -62,7 +62,7 @@ function mkss, priorfile=priorfile, $
                fitreflect=fitreflect, fitphase=fitphase,$
                fitbeam=fitbeam, derivebeam=derivebeam, $
                ;; star inputs
-               nstars=nstars, starndx=starndx, $
+               nstars=nstars, starndx=starndx, linkstarndx=linkstarndx, $
                seddeblend=seddeblend, fitdilute=fitdilute, $
                ;; planet inputs
                nplanets=nplanets, $
@@ -294,9 +294,14 @@ if n_elements(fittt) ne nplanets and n_elements(fittt) gt 1 then begin
 endif
 
 if n_elements(starndx) eq 0 then starndx = lonarr(nplanets>1)
+if n_elements(linkstarndx) eq 0 then linkstarndx = lonarr(nplanets>1)-1
 
 if n_elements(starndx) ne nplanets and nplanets gt 0 then begin
    printandlog, "STARNDX must have NPLANETS (" + strtrim(nplanets,2) + ") elements",logname
+   return, -1
+endif
+if n_elements(linkstarndx) ne nplanets and nplanets gt 0 then begin
+   printandlog, "LINKSTARNDX must have NPLANETS (" + strtrim(nplanets,2) + ") elements",logname
    return, -1
 endif
 
@@ -2253,6 +2258,7 @@ planet = create_struct($
          psg.label,psg,$     
          beam.label,beam,$     ;; other
          'starndx',0L,$
+		 'linkstarndx',-1L,$    ;; index of the star structure corresponding to the same physical object as the planet structure
          'fittran',fittran[0],$        ;; booleans
          'fitrv',fitrv[0],$
          'chen',chen[0],$
@@ -2531,7 +2537,7 @@ plabels = ['b','c','d','e','f','g','h','i','j','k','l','m','n',$
 for i=0, nplanets-1 do begin
    ss.planet[i].label = plabels[i]
    ss.planet[i].starndx = starndx[i]
-
+   ss.planet[i].linkstarndx = linkstarndx[i] ; index of linked star structure
    ;; circular orbit, don't fit e or omega
    if circular[i] then begin
       ss.planet[i].qesinw.fit = 0
@@ -2704,16 +2710,6 @@ for i=0, nband-1 do begin
    else ss.band[i].u1.value = 0d0
    if finite(ldcoeffs[1]) then ss.band[i].u2.value = ldcoeffs[1] $
    else ss.band[i].u2.value = 0d0
-
-   if keyword_set(limbdarksecondary) then begin
-      ss.band[i].u1s.fit = 1B
-	  ss.band[i].u2s.fit = 2B
-      ldcoeffs_sec = quadld(ss.star[1].logg.value, ss.star[1].teff.value, ss.star[1].feh.value, bands[i])
-      if finite(ldcoeffs_sec[0]) then ss.band[i].u1s.value = ldcoeffs_sec[0] $
-      else ss.band[i].u1s.value = 0d0
-      if finite(ldcoeffs_sec[1]) then ss.band[i].u2s.value = ldcoeffs_sec[1] $
-      else ss.band[i].u2s.value = 0d0
-   endif
    
    match = where(fitthermal eq ss.band[i].name)
    if match[0] ne -1 then begin
@@ -2731,24 +2727,19 @@ for i=0, nband-1 do begin
 
    match = where(derivethermal eq ss.band[i].name)
    if match[0] ne -1 then begin
-      ss.band[i].thermal.fit = 0B
+      ss.band[i].thermal.fit = 1B
 	  ss.band[i].thermal.derive = 1B
       ss.band[i].eclipsedepth.derive = 1B
 	  if (where(fitthermal eq ss.band[i].name)) ne -1 then begin
-         printandlog, "ERROR: Do not set both fitthermal and derivethermal for the same band!"
-		 stop
+         printandlog, "[MKSS] ERROR: Do not set both FITTHERMAL and DERIVETHERMAL for the same band!"
+		 return, -1
       endif
-      if ~keyword_set(silent) then printandlog, "Deriving thermal emission from SEDs for " + ss.band[i].name + " band " + $
-		    "(see chi2v2.pro, multised.pro, derivepars.pro, and getmcmcscale.pro for modifications to undo otherwise).",logname
+      if ~keyword_set(silent) then printandlog, "Deriving thermal emission from SEDs for " + ss.band[i].name + " band."+ string(10B), logname; + $
+		  ;  "(see chi2v2.pro, multised.pro, derivepars.pro, and getmcmcscale.pro for modifications to undo otherwise).",logname
    endif
 
    match = where(limbdarksecondary eq 1)
    if match[0] ne -1 then begin
-      if ~keyword_set(silent) then begin
-	     printandlog, "[MKSS] Fitting limb-darkened secondary eclipses for the following light curves:", logname
-         for j=0, n_elements(match)-1 do printandlog, string(match[j],tranfiles[j],format='(i2,x,a)'),logname
-         printandlog, "[MKSS]: WARNING!: Assuming planet 0 is linked to star 1 for limb-darkened secondary eclipses.", logname
-      endif
 	  if ((fitthermal eq ['']) and (derivethermal eq [''])) then begin
          printandlog, "[MKSS] ERROR: To fit limb-darkened secondary eclipses, then either FITTHERMAL or DERIVETHERMAL"+ $
                    " must be set when FITLIMBDARKSEC is set.", logname
@@ -2852,7 +2843,6 @@ if ntran gt 0 then begin
       endif
 
       ss.transit[i].claret = ~keyword_set(noclaret[i])
-	  ss.transit[i].limbdarksecondary = keyword_set(limbdarksecondary[i])
       ss.transit[i].fitspline = fitspline[i]
       ss.transit[i].splinespace = splinespace[i]
       ss.transit[i].fitramp = fitramp[i]
@@ -2901,7 +2891,22 @@ if ntran gt 0 then begin
             ss.transit[i].tdeltav.derive = 1B
          endif
       endfor
-
+	  ss.transit[i].limbdarksecondary = keyword_set(limbdarksecondary[i])
+      if ss.transit[i].limbdarksecondary then begin
+         ss.band[ss.transit[i].bandndx].u1s.fit = 1B
+		 ss.band[ss.transit[i].bandndx].u2s.fit = 1B
+         ldsecstarndx = ss.planet[ss.band[ss.transit[i].bandndx].starndx].linkstarndx
+         ldcoeffs_sec = quadld(ss.star[ldsecstarndx].logg.value, ss.star[ldsecstarndx].teff.value, ss.star[ldsecstarndx].feh.value, bands[i])
+         if finite(ldcoeffs_sec[0]) then ss.band[i].u1s.value = ldcoeffs_sec[0] $
+         else ss.band[i].u1s.value = 0d0
+         if finite(ldcoeffs_sec[1]) then ss.band[i].u2s.value = ldcoeffs_sec[1] $
+         else ss.band[i].u2s.value = 0d0
+         if ~keyword_set(silent) then begin
+            printandlog, "[MKSS] Fitting limb-darkened secondary eclipses for the following light curves:" + string(10B), logname
+            for j=0, n_elements(match)-1 do printandlog, string(j,tranfiles[j],format='(i2,x,a)'),logname
+            ;printandlog, "[MKSS]: WARNING!: Assuming planet 0 is linked to star 1 for limb-darkened secondary eclipses.", logname
+         endif
+      endif
    endfor
 
    if n_elements(dilutebandndx) gt 1 then begin
@@ -2946,7 +2951,8 @@ if file_test(mistsedfile) or file_test(sedfile) or file_test(fluxfile) then begi
       for i=0, n_elements(sed_struct.sedthermal)-1 do begin
          if finite(sed_struct.sedthermal[i]) then begin
             thermndx = where(ss.band[ss.transit[*].bandndx].label eq derivethermal[i])
-            ss.band[ss.transit[thermndx].bandndx].thermal.value = sed_struct.sedthermal[i]
+            ;ss.band[ss.transit[thermndx].bandndx].thermal.value = sed_struct.sedthermal[i]
+            thermalchi2 = ((ss.band[ss.transit[thermndx].bandndx].thermal.value - sed_struct.sedthermal[i])/(sed_struct.sedthermal[i]*0.05d0))^2   
          endif
       endfor
 	  

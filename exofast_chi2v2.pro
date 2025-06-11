@@ -952,10 +952,13 @@ if file_test(ss.mistsedfile) or file_test(ss.fluxfile) or file_test(ss.sedfile) 
 
 	  ;; DJS: pass derived thermal emission to the corresponding THERMAL parameter
       ;; if dilution is being fit
+	  ;; will need to change this: ideally, derived on per-transit basis, with band.label lookups on per-transit basis
+      ;; CHANGED 2025-06-11 to be a chi^2 penalty instead, to avoid massive slowdown in derivepars.pro after MCMC
       for i=0, n_elements(sed_struct.sedthermal)-1 do begin
          if finite(sed_struct.sedthermal[i]) then begin
             thermndx = where(ss.band[ss.transit[*].bandndx].label eq ss.derivethermal[i])
-            ss.band[ss.transit[thermndx].bandndx].thermal.value = sed_struct.sedthermal[i]
+            ;ss.band[ss.transit[thermndx].bandndx].thermal.value = sed_struct.sedthermal[i]
+            thermalchi2 = ((ss.band[ss.transit[thermndx].bandndx].thermal.value - sed_struct.sedthermal[i])/(sed_struct.sedthermal[i]*0.05d0))^2   
          endif
       endfor
 
@@ -1290,7 +1293,7 @@ for j=0L, ss.ntran-1 do begin
    band = ss.band[ss.transit[j].bandndx]
    planetndx = ss.transit[j].pndx
    starndx = ss.planet[planetndx].starndx
-
+   linkstarndx = ss.planet[planetndx].linkstarndx
    ;; quadratic limb darkening
    if ss.transit[j].claret then begin
       ldcoeffs = quadld(ss.star[starndx].logg.value, $
@@ -1314,6 +1317,28 @@ for j=0L, ss.ntran-1 do begin
       chi2 += ((band.u2.value-u2claret)/u2err)^2
       if ss.verbose then printandlog, band.label + ' u1 penalty = ' + strtrim(((band.u1.value-u1claret)/u1err)^2,2),ss.logname
       if ss.verbose then printandlog, band.label + ' u2 penalty = ' + strtrim(((band.u2.value-u2claret)/u2err)^2,2),ss.logname
+	  
+      if ss.transit[j].limbdarksecondary then begin
+         ldcoeffs_sec = quadld(ss.star[linkstarndx].logg.value, $
+                               ss.star[linkstarndx].teff.value, $
+                               ss.star[linkstarndx].feh.value, band.name, $
+                               verbose=ss.verbose, logname=ss.logname)
+         u1sclaret = ldcoeffs_sec[0]
+         u2sclaret = ldcoeffs_sec[1]
+		 if ~finite(u1sclaret) or ~finite(u2sclaret) then begin
+            if ss.verbose then begin
+               printandlog, band.label + ' limb darkening coefficients are not defined at this ' +$
+                            'Teff (' + strtrim(ss.star[linkstarndx].teff.value,2) + ', ' + $
+                            'logg (' + strtrim(ss.star[linkstarndx].logg.value,2) + ', and ' + $
+                            '[Fe/H] (' + strtrim(ss.star[linkstarndx].feh.value,2) + '; rejecting step',ss.logname
+            endif
+            return, !values.d_infinity
+		 endif
+         chi2 += ((band.u1s.value-u1sclaret)/u1err)^2
+         chi2 += ((band.u2s.value-u2sclaret)/u2err)^2
+         if ss.verbose then printandlog, band.label + ' u1s penalty = ' + strtrim(((band.u1s.value-u1sclaret)/u1err)^2,2),ss.logname
+         if ss.verbose then printandlog, band.label + ' u2s penalty = ' + strtrim(((band.u2s.value-u2sclaret)/u2err)^2,2),ss.logname   
+      endif  
    endif
 
    ;; Kepler Long candence data; create several model points and average   

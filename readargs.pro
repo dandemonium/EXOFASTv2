@@ -263,7 +263,9 @@ while not eof(lun) do begin
          endif else if strupcase(strtrim(entries[0],2)) eq 'DERIVETHERMAL' then begin
             derivethermal = json_parse(entries[1],/toarray)
          endif else if strupcase(strtrim(entries[0],2)) eq 'LIMBDARKSECONDARY' then begin
-            limbdarksecondary = json_parse(entries[1],/toarray)
+            limbdarksecondary = boolean(entries[1],/toarray)
+         endif else if strupcase(strtrim(entries[0],2)) eq 'LINKSTARNDX' then begin
+            linkstarndx = boolean(entries[1],/toarray)
          endif else begin
             printandlog, entries[0] + ' argument not recognized', logname
          endelse
