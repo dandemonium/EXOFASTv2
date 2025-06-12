@@ -2682,6 +2682,7 @@ for i=0, nplanets-1 do begin
       ss.planet[i].rpsun.fit = 1
 	  ss.planet[i].rpsun.derive = 0 
 	  ss.planet[i].p.fit = 0
+      if fittran[i] then ss.planet[i].p.derive = 1
    endif
 endfor
 
@@ -2953,6 +2954,7 @@ if file_test(mistsedfile) or file_test(sedfile) or file_test(fluxfile) then begi
             thermndx = where(ss.band[ss.transit[*].bandndx].label eq derivethermal[i])
             ;ss.band[ss.transit[thermndx].bandndx].thermal.value = sed_struct.sedthermal[i]
             thermalchi2 = ((ss.band[ss.transit[thermndx].bandndx].thermal.value - sed_struct.sedthermal[i])/(sed_struct.sedthermal[i]*0.05d0))^2   
+			sedchi2 += thermalchi2
          endif
       endfor
 	  

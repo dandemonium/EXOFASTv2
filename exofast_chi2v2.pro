@@ -957,8 +957,11 @@ if file_test(ss.mistsedfile) or file_test(ss.fluxfile) or file_test(ss.sedfile) 
       for i=0, n_elements(sed_struct.sedthermal)-1 do begin
          if finite(sed_struct.sedthermal[i]) then begin
             thermndx = where(ss.band[ss.transit[*].bandndx].label eq ss.derivethermal[i])
+			if thermndx[0] ne -1 then $
             ;ss.band[ss.transit[thermndx].bandndx].thermal.value = sed_struct.sedthermal[i]
-            thermalchi2 = ((ss.band[ss.transit[thermndx].bandndx].thermal.value - sed_struct.sedthermal[i])/(sed_struct.sedthermal[i]*0.05d0))^2   
+               thermalchi2 = ((ss.band[ss.transit[thermndx[0]].bandndx].thermal.value - sed_struct.sedthermal[i])/(sed_struct.sedthermal[i]*0.05d0))^2 $
+			   else thermalchi2 = 0
+			chi2 += thermalchi2
          endif
       endfor
 
