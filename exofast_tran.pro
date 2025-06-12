@@ -55,6 +55,8 @@
 ;               215.094177d0
 ;     C       - The speed of light, in AU/day (default is computed in
 ;               TARGET2BJD).
+;     U_SEC   - Array containing secondary star's quadratic limb darkening coefficients,
+;               if fitting limb-darkened secondary eclipses with /LIMBDARKSECONDARY .
 ;  OUTPUTS:
 ;    MODEL - The transit model as a function of time
 ; 
@@ -65,11 +67,12 @@
 ;               check. Didn't convert to target frame before,
 ;               as called by exofast_chi2v2.pro
 ;    2023/03/16 - Adds eBEER formulae instead of DJS formulae
+;    2025/06/11 - Add hooks for limb-darkened secondary eclipses
 ;-
 function exofast_tran, time, inc, ar, tp, period, e, omega, p, u1, u2, f0, $
                        rstar=rstar, thermal=thermal, reflect=reflect, beam=beam, ellipsoidal=ellipsoidal, $
                        phaseshift=phaseshift, $
-                       dilute=dilute, tc=tc, q=q, au=au,c=c;,x1=x1,y1=y1,z1=z1
+                       dilute=dilute, tc=tc, q=q, au=au,c=c, u_sec=u_sec;,x1=x1,y1=y1,z1=z1
 
 if n_elements(thermal) eq 0 then thermal = 0d0
 if n_elements(reflect) eq 0 then reflect = 0d0
@@ -78,6 +81,7 @@ if n_elements(ellipsoidal) eq 0 then ellipsoidal = 0d0
 if n_elements(beam) eq 0 then beam = 0d0
 if n_elements(AU) eq 0 then AU = 215.094177d0
 if n_elements(phaseshift) eq 0 then phaseshift = 0d0
+if ~keyword_set(u_sec) then u_sec=[0,0]
 
 ;; if we have the stellar radius, we can convert time to the
 ;; target's barycentric frame
@@ -136,7 +140,7 @@ endif
 if thermal ne 0d0 or reflect ne 0d0 then begin
    planetvisible = dblarr(n_elements(time)) + 1d0
    if secondary[0] ne - 1 then begin
-      exofast_occultquad_cel, z[secondary]/abs(p), 0, 0, 1d0/p, mu1
+      exofast_occultquad_cel, z[secondary]/abs(p), u_sec[0], u_sec[1], 1d0/p, mu1
       planetvisible[secondary] = mu1
    endif
 endif
@@ -173,20 +177,18 @@ if reflect ne 0d0 then begin
    endelse
 endif
 
-
-
 ;; add beaming and ellipsoidal variations
-if ellipsoidal ne 0d0 then begin
-  if e eq 0 then begin  ;;; commented out June 6, 2023;
-    if n_elements(tc) eq 0 and n_elements(tc0) eq 0 then begin
-      phase = exofast_getphase(e,omega,/primary)  
-      tc0 = tp - phase*period
-    endif else tc0 = tc
-  modelflux -= ellipsoidal*1d-6*cos(2d0*!dpi*(transitbjd-tc)/(period/2d0))
-  endif else begin
-    modelflux+= 1d-6*ellipsoidal*cos(2.*(omega+trueanom))*beta_ebeer^(3.)
-  endelse
-endif
+;if ellipsoidal ne 0d0 then begin
+;  if e eq 0 then begin  ;;; commented out June 6, 2023;
+;    if n_elements(tc) eq 0 and n_elements(tc0) eq 0 then begin
+;      phase = exofast_getphase(e,omega,/primary)  
+;      tc0 = tp - phase*period
+;    endif else tc0 = tc
+;  modelflux -= ellipsoidal*1d-6*cos(2d0*!dpi*(transitbjd-tc)/(period/2d0))
+;  endif else begin
+;    modelflux+= 1d-6*ellipsoidal*cos(2.*(omega+trueanom))*beta_ebeer^(3.)
+;  endelse
+;endif
 
 if beam ne 0d0 then begin
    if n_elements(tc) eq 0 and n_elements(tc0) eq 0 then begin

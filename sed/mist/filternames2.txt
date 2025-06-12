@@ -1,4 +1,5 @@
 # Keivan's filter names, MIST filter names, Claret Filter names, svo filter names
+CHEOPS Kepler_Kp CHEOPS CHEOPS_CHEOPS.band
 H2M 2MASS_H H 2MASS_2MASS.H
 J2M 2MASS_J J 2MASS_2MASS.J
 K2M 2MASS_Ks K 2MASS_2MASS.Ks
@@ -101,7 +102,7 @@ Unsupported IRAC_5.8 Spit58 Unsupported
 Unsupported IRAC_8.0 Spit80 Unsupported
 Unsupported J129 Unsupported Unsupported
 Unsupported Kepler_D51 Unsupported Unsupported
-Unsupported Kepler_Kp Kepler Unsupported
+Kepler Kepler_Kp Kepler Kepler_Kepler.K
 Unsupported LSST_g Unsupported Unsupported
 Unsupported LSST_i Unsupported Unsupported
 Unsupported LSST_r Unsupported Unsupported
@@ -137,7 +138,7 @@ Unsupported Swift_UVM2 Unsupported Unsupported
 Unsupported Swift_UVW1 Unsupported Unsupported
 Unsupported Swift_UVW2 Unsupported Unsupported
 Unsupported Swift_V Unsupported Unsupported
-Unsupported TESS TESS Unsupported
+Unsupported TESS TESS TESS_TESS.Red
 BT Tycho_B Unsupported TYCHO_TYCHO.B
 VT Tycho_V Unsupported TYCHO_TYCHO.V
 Unsupported UKIDSS_H Unsupported Unsupported

@@ -37,7 +37,9 @@
 ;
 ; MODIFICATION HISTORY
 ; 
-;  2023/12 -- Documentation cleanup.
+;  2023/12 -- JDE: Documentation cleanup.
+;  2025/06 -- DJS: Derive thermal emission; add NextGen deblending; add
+;                  limb-darkened secondary eclipses.
 ;-
 function mkss, priorfile=priorfile, $
                prefix=prefix,$
@@ -60,7 +62,7 @@ function mkss, priorfile=priorfile, $
                fitreflect=fitreflect, fitphase=fitphase,$
                fitbeam=fitbeam, derivebeam=derivebeam, $
                ;; star inputs
-               nstars=nstars, starndx=starndx, $
+               nstars=nstars, starndx=starndx, linkstarndx=linkstarndx, $
                seddeblend=seddeblend, fitdilute=fitdilute, $
                ;; planet inputs
                nplanets=nplanets, $
@@ -80,7 +82,7 @@ function mkss, priorfile=priorfile, $
                fitspline=fitspline, splinespace=splinespace, $
                fitramp=fitramp, fitwavelet=fitwavelet, $            
                ;; reparameterization inputs
-               fitlogmp=fitlogmp,$
+               fitlogmp=fitlogmp, fitrp=fitrp, $
                novcve=novcve, nochord=nochord, fitsign=fitsign, $
                fittt=fittt, earth=earth, $
                ;; plotting inputs
@@ -93,7 +95,7 @@ function mkss, priorfile=priorfile, $
                silent=silent, $
                chi2func=chi2func, $
                logname=logname, $
-               best=best, derivethermal=derivethermal
+               best=best, derivethermal=derivethermal, limbdarksecondary=limbdarksecondary
 
 
 if n_elements(transitrange) eq 0 then transitrange=dblarr(6)+!values.d_nan
@@ -262,6 +264,10 @@ if n_elements(fitlogmp) ne nplanets and n_elements(fitlogmp) gt 1 then begin
    printandlog, "FITLOGMP must have NPLANETS (" + strtrim(nplanets,2) + ") elements",logname
    return, -1
 endif
+if n_elements(fitrp) ne nplanets and n_elements(fitrp) gt 1 then begin
+   printandlog, "fitrp must have NPLANETS (" + strtrim(nplanets,2) + ") elements",logname
+   return, -1
+endif
 if n_elements(novcve) ne nplanets and n_elements(novcve) gt 1 then begin
    printandlog, "NOVCVE must have NPLANETS (" + strtrim(nplanets,2) + ") elements",logname
    return, -1
@@ -288,20 +294,26 @@ if n_elements(fittt) ne nplanets and n_elements(fittt) gt 1 then begin
 endif
 
 if n_elements(starndx) eq 0 then starndx = lonarr(nplanets>1)
+if n_elements(linkstarndx) eq 0 then linkstarndx = lonarr(nplanets>1)-1
 
 if n_elements(starndx) ne nplanets and nplanets gt 0 then begin
    printandlog, "STARNDX must have NPLANETS (" + strtrim(nplanets,2) + ") elements",logname
    return, -1
 endif
+if n_elements(linkstarndx) ne nplanets and nplanets gt 0 then begin
+   printandlog, "LINKSTARNDX must have NPLANETS (" + strtrim(nplanets,2) + ") elements",logname
+   return, -1
+endif
 
 if not keyword_set(longcadence) then longcadence=0B
-if not keyword_set(derivethermal) then derivethermal=0B
+;if not keyword_set(derivethermal) then derivethermal=0B
 if n_elements(fitthermal) eq 0 then fitthermal = ['']
+if n_elements(derivethermal) eq 0 then derivethermal = ['']
 if n_elements(fitreflect) eq 0 then fitreflect = ['']
 if n_elements(fitphase) eq 0 then fitphase = ['']
 if n_elements(fitellip) eq 0 then fitellip = ['']
 if n_elements(fitbeam) eq 0 then fitbeam = ['']
-if n_elements(fitdilute) eq 0 then fitdilute = ['']
+;if n_elements(fitdilute) eq 0 then fitdilute = ['']
 if n_elements(tranpath) eq 0 then tranpath = ''
 if n_elements(rvpath) eq 0 then rvpath = ''
 if n_elements(astrompath) eq 0 then astrompath = ''
@@ -321,6 +333,7 @@ endif else begin
    ntran = 0
    tranpath = ''
 endelse
+if ~keyword_set(limbdarksecondary) then limbdarksecondary=strarr(ntran)
 
 if n_elements(noclaret) eq 1 then begin
    noclaret = bytarr(ntran>1) + keyword_set(noclaret)
@@ -362,11 +375,11 @@ if tranpath ne '' or astrompath ne '' then begin
    ;; find the unique bands
    allowedbands = ['U','B','V','R','I','J','H','K',$
                    'Sloanu','Sloang','Sloanr','Sloani','Sloanz',$
-                   'Kepler','TESS','CoRoT','Spit36','Spit45','Spit58','Spit80',$
+                   'Kepler', 'CHEOPS','TESS','CoRoT','Spit36','Spit45','Spit58','Spit80',$
                    'u','b','v','y']
    prettybands = ['U','B','V','R','I','J','H','K',$
                   "u'","g'","r'","i'","z'",$
-                  'Kepler','TESS','CoRoT','$3.6\mu m$','$4.5\mu m$','$5.8\mu m$','$8.0\mu m$',$
+                  'Kepler', 'CHEOPS', 'TESS','CoRoT','$3.6\mu m$','$4.5\mu m$','$5.8\mu m$','$8.0\mu m$',$
                   'u','b','v','y']
    bands = strarr(ntran+nastrom)
    for i=0, ntran+nastrom-1 do begin
@@ -671,6 +684,7 @@ endif else if n_elements(fittt) eq 1 then begin
 endif  
 
 if n_elements(fitlogmp) eq 0 then fitlogmp = bytarr(nplanets>1)
+if n_elements(fitrp) eq 0 then fitrp = bytarr(nplanets>1)
 
 if n_elements(chen) ne nplanets or nplanets eq 0 then chen = fittran xor fitrv
 if n_elements(i180) ne nplanets or nplanets eq 0 then i180 = bytarr(nplanets>1)
@@ -1898,6 +1912,23 @@ u2.scale = 0.15d0
 if nplanets eq 0 then u2.derive = 0 $
 else u2.fit = 1
 
+u1s = parameter
+u1s.description = 'Linear limb-darkening coeff for secondary'
+u1s.latex = 'u_{1,S}'
+u1s.label = 'u1s'
+u1s.scale = 0.15d0
+u1s.fit = 0
+u1s.derive = 0
+;else u1s.fit  1
+
+u2s = parameter
+u2s.description = 'Quadratic limb-darkening coeff for secondary'
+u2s.latex = 'u_{2,S}'
+u2s.label = 'u2s'
+u2s.scale = 0.15d0
+u2s.fit = 0
+u2s.derive = 0
+
 u3 = parameter
 u3.description = 'Non-linear limb-darkening coeff'
 u3.latex = 'u_{3}'
@@ -2227,6 +2258,7 @@ planet = create_struct($
          psg.label,psg,$     
          beam.label,beam,$     ;; other
          'starndx',0L,$
+		 'linkstarndx',-1L,$    ;; index of the star structure corresponding to the same physical object as the planet structure
          'fittran',fittran[0],$        ;; booleans
          'fitrv',fitrv[0],$
          'chen',chen[0],$
@@ -2246,6 +2278,8 @@ band = create_struct(u1.label,u1,$ ;; linear limb darkening
                      u2.label,u2,$ ;; quadratic limb darkening
                      u3.label,u3,$ ;; 1st non-linear limb darkening
                      u4.label,u4,$ ;; 2nd non-linear limb darkening
+					 u1s.label,u1s,$ ;; linear limb darkening for secondary
+					 u2s.label,u2s,$ ;; quadratic limb darkening for secondary
                      thermal.label,thermal,$ ;; thermal emission
                      ;dilute.label,dilute,$   ;; dilution
                      reflect.label,reflect,$ ;; reflection
@@ -2303,7 +2337,8 @@ transit = create_struct(variance.label,variance,$ ;; jitter
                         'fitspline',0B,$
                         'splinespace',0.75d0,$
                         'fitramp',0B,$
-                        'label','') 
+                        'label','',$
+						'limbdarksecondary',0B) 
 
 doptom = create_struct('dtptrs',ptr_new(),$
                        'rootlabel','Doppler Tomography Parameters:',$
@@ -2392,6 +2427,7 @@ ss = create_struct('star',replicate(star,nstars>1),$
                    'fitdt',fitdt,$
                    'rossiter',rossiter,$
                    'fitlogmp',fitlogmp,$
+				   'fitrp',fitrp,$
                    'rejectflatmodel',rejectflatmodel,$
                    'noprimary',noprimary,$
                    'requiresecondary',requiresecondary,$
@@ -2431,93 +2467,11 @@ ss = create_struct('star',replicate(star,nstars>1),$
                    'rvrange',rvrange,$
                    'sedrange',sedrange,$
                    'emrange',emrange,$
-                   'derivethermal',derivethermal)
+                   'derivethermal',derivethermal,$
+				   'limbdarksecondary',limbdarksecondary)
 
 ;)
 
-;; three different ways to do the SED model
-if file_test(mistsedfile) or file_test(sedfile) or file_test(fluxfile) then begin
-
-   ;; overwrite the common block, in case it's been called
-   ;; before then updated (without exiting IDL)
-   ;; the chi2 doesn't matter here, use solar values
-   
-   if file_test(mistsedfile) then begin
-;      common BC_block, bcarrays, teffgrid, logggrid, fehgrid, avgrid, sedbands, mags, errs, filterprops, blend
-      sedchi2 = mistmultised(replicate(6000d0,nstars), replicate(4.41d0,nstars), replicate(0d0,nstars), $
-                             replicate(0d0,nstars), replicate(10d0,nstars), replicate(1d0,nstars), $
-                             replicate(1d0,nstars), mistsedfile, /redo,blend0=blend)
-      ss.mistsedfile = mistsedfile
-      ss.ndata += n_elements(mags) +2d0 ;; two more because of links between rstar and rstarsed, teff and teffsed
-   endif else if file_test(sedfile) then begin
-      sedarr = exofast_multised(replicate(6000d0,nstars), replicate(4.41d0,nstars), replicate(0d0,nstars), $
-                                 replicate(0d0,nstars), replicate(10d0,nstars), replicate(1d0,nstars), $
-                                 replicate(1d0,nstars), sedfile, /redo, specphotpath=specphotpath,$
-                                 blend0=blend,rstar=replicate(1d0,nstars),$
-                                 sperrscale=ss.specphot.sperrscale.value[0],spzeropoint=ss.specphot.spzeropoint.value[0], derivethermal=derivethermal)
-
-      sedchi2 = sedarr[0]
-      if keyword_set(derivethermal) then begin
-         thermndx = where(ss.band[ss.transit[*].bandndx].label eq 'TESS')
-         ss.band[ss.transit[thermndx].bandndx].thermal.value = sedarr[1]
-      endif
-      ss.sedfile = sedfile
-      readcol, sedfile, junk, format='a', comment='#', /silent
-      ndata += n_elements(junk) + 2 ;; two more because of links between rstar and rstarsed, teff and teffsed
-      for i=0L, ss.nspecfiles-1 do begin
-         ss.specphot[i].label = specfiles[i]
-         ss.specphot[i].sperrscale.fit = 1
-         ss.specphot[i].sperrscale.derive = 1
-         ss.specphot[i].spzeropoint.fit = 1
-         ss.specphot[i].spzeropoint.derive = 1
-      endfor
-   endif else begin
-      printandlog, 'WARNING: FLUXFILE has been deprecated. MISTSEDFILE should be used instead.', logname
-      printandlog, 'NOTE: When using MISTSEDFILE, the C3K atmosphere is not computed directly. The plotted NextGen atmosphere is for aesthetics only.', logname
-
-      sedchi2 = exofast_sed(fluxfile, 6000d0,1d0,0d0,10d0,logg=4.41d0,met=0d0,alpha=0d0,/redo)
-      ss.fluxfile = fluxfile
-      readcol, fluxfile, junk, format='a', comment='#', /silent
-      ndata += n_elements(junk) + 2 ;; two more because of links between rstar and rstarsed, teff and teffsed
-   endelse
-   
-   starsused = where(total(blend,1) ne 0,nused)
-   for i=0L, nused-1 do begin
-      
-      ss.star[starsused[i]].errscale.fit = 1
-      ss.star[starsused[i]].errscale.derive = 1
-      ss.star[starsused[i]].distance.derive = 1
-      ss.star[starsused[i]].distance.fit = 1
-      ss.star[starsused[i]].fbol.derive = 1
-      ss.star[starsused[i]].parallax.derive = 1
-      ss.star[starsused[i]].av.fit = 1
-      ss.star[starsused[i]].av.derive = 1
-      
-      if teffsedfloor ne 0d0 then begin
-         ss.star[starsused[i]].teffsed.fit = 1
-         ss.star[starsused[i]].teffsed.derive = 1
-      endif
-      if fbolsedfloor ne 0d0 then begin
-         ss.star[starsused[i]].rstarsed.fit = 1
-         ss.star[starsused[i]].rstarsed.derive = 1
-      endif
-      if fehsedfloor ne 0d0 then begin
-         ss.star[starsused[i]].fehsed.fit = 1
-         ss.star[starsused[i]].fehsed.derive = 1
-      endif
-   endfor
-endif else begin
-   if mistsedfile ne '' then begin
-      printandlog, 'Could not find ' + mistsedfile, logname
-      return, -1
-   endif else if sedfile ne '' then begin
-      printandlog, 'Could not find ' + sedfile, logname
-      return, -1
-   endif else if fluxfile ne '' then begin
-      printandlog, 'Could not find ' + fluxfile, logname
-      return, -1
-   endif
-endelse
 
 if n_elements(logname) eq 1 then ss.logname=logname
 
@@ -2583,7 +2537,7 @@ plabels = ['b','c','d','e','f','g','h','i','j','k','l','m','n',$
 for i=0, nplanets-1 do begin
    ss.planet[i].label = plabels[i]
    ss.planet[i].starndx = starndx[i]
-
+   ss.planet[i].linkstarndx = linkstarndx[i] ; index of linked star structure
    ;; circular orbit, don't fit e or omega
    if circular[i] then begin
       ss.planet[i].qesinw.fit = 0
@@ -2724,7 +2678,12 @@ for i=0, nplanets-1 do begin
       ss.planet[i].logmp.fit = 1
       ss.planet[i].mpsun.fit = 0
    endif
-
+   if fitrp[i] then begin
+      ss.planet[i].rpsun.fit = 1
+	  ss.planet[i].rpsun.derive = 0 
+	  ss.planet[i].p.fit = 0
+      if fittran[i] then ss.planet[i].p.derive = 1
+   endif
 endfor
 
 for i=0, nband-1 do begin
@@ -2747,25 +2706,48 @@ for i=0, nband-1 do begin
    endelse
       
    ldcoeffs = quadld(ss.star[0].logg.value, ss.star[0].teff.value, ss.star[0].feh.value, bands[i])
+
    if finite(ldcoeffs[0]) then ss.band[i].u1.value = ldcoeffs[0] $
    else ss.band[i].u1.value = 0d0
    if finite(ldcoeffs[1]) then ss.band[i].u2.value = ldcoeffs[1] $
    else ss.band[i].u2.value = 0d0
-
+   
    match = where(fitthermal eq ss.band[i].name)
    if match[0] ne -1 then begin
       ss.band[i].thermal.fit = 1B
 	  ss.band[i].thermal.derive = 1B
       ss.band[i].eclipsedepth.derive = 1B
       if ~keyword_set(silent) then printandlog, "Fitting thermal emission for " + ss.band[i].name + " band",logname
-	  if keyword_set(derivethermal) then begin
-         thermndx = where(ss.band[i].thermal.label eq 'TESS')
-	     ss.band[thermndx].thermal.fit = 0B
-         if ~keyword_set(silent) then printandlog, "Actually, deriving thermal emission from SEDs for " + ss.band[i].name + " band; " + $
-		    "(see chi2v2.pro, multised.pro, derivepars.pro, and getmcmcscale.pro for modifications to undo otherwise).",logname
-      endif
+;'	  if keyword_set(derivethermal) then begin
+;         thermndx = where(ss.band[i].thermal.label eq 'TESS')
+;	     ss.band[thermndx].thermal.fit = 0B
+;         if ~keyword_set(silent) then printandlog, "Actually, deriving thermal emission from SEDs for " + ss.band[i].name + " band; " + $
+;		    "(see chi2v2.pro, multised.pro, derivepars.pro, and getmcmcscale.pro for modifications to undo otherwise).",logname
+;      endif
    endif
 
+   match = where(derivethermal eq ss.band[i].name)
+   if match[0] ne -1 then begin
+      ss.band[i].thermal.fit = 1B
+	  ss.band[i].thermal.derive = 1B
+      ss.band[i].eclipsedepth.derive = 1B
+	  if (where(fitthermal eq ss.band[i].name)) ne -1 then begin
+         printandlog, "[MKSS] ERROR: Do not set both FITTHERMAL and DERIVETHERMAL for the same band!"
+		 return, -1
+      endif
+      if ~keyword_set(silent) then printandlog, "Deriving thermal emission from SEDs for " + ss.band[i].name + " band."+ string(10B), logname; + $
+		  ;  "(see chi2v2.pro, multised.pro, derivepars.pro, and getmcmcscale.pro for modifications to undo otherwise).",logname
+   endif
+
+   match = where(limbdarksecondary eq 1)
+   if match[0] ne -1 then begin
+	  if ((fitthermal eq ['']) and (derivethermal eq [''])) then begin
+         printandlog, "[MKSS] ERROR: To fit limb-darkened secondary eclipses, then either FITTHERMAL or DERIVETHERMAL"+ $
+                   " must be set when FITLIMBDARKSEC is set.", logname
+         return, -1
+      endif
+   endif
+   
    match = where(fitreflect eq ss.band[i].name)
    if match[0] ne -1 then begin
       ss.band[i].reflect.fit = 1B
@@ -2787,11 +2769,11 @@ for i=0, nband-1 do begin
 ;      printandlog, "Not fitting Doppler beaming for " + ss.band[i].name + " band", logname
 ;   endif
 ;   match = where(fitphase eq ss.band[i].name)
-   if match[0] ne -1 then begin
-      ss.band[i].phaseshift.fit = 1B
-      ss.band[i].phaseshift.derive = 1B
-      if ~keyword_set(silent) then printandlog, "Fitting phase offset for " + ss.band[i].name + " band", logname
-   endif
+;   if match[0] ne -1 then begin
+;      ss.band[i].phaseshift.fit = 1B
+;      ss.band[i].phaseshift.derive = 1B
+;      if ~keyword_set(silent) then printandlog, "Fitting phase offset for " + ss.band[i].name + " band", logname
+;   endif
 
 ;   match = where(fitdilute eq ss.band[i].name)
 ;   if match[0] ne -1 then begin
@@ -2851,7 +2833,7 @@ if ntran gt 0 then begin
       ss.transit[i].rejectflatmodel = rejectflatmodel[i]
 
       if total(seddeblend[i,*]) then begin
-         dilutebandndx = [dilutebandndx,ss.transit.bandndx]
+         dilutebandndx = [dilutebandndx,ss.transit[i].bandndx]
          ss.transit[i].dilute.fit = 1B
          ss.transit[i].dilute.derive = 1B
       endif
@@ -2910,7 +2892,22 @@ if ntran gt 0 then begin
             ss.transit[i].tdeltav.derive = 1B
          endif
       endfor
-
+	  ss.transit[i].limbdarksecondary = keyword_set(limbdarksecondary[i])
+      if ss.transit[i].limbdarksecondary then begin
+         ss.band[ss.transit[i].bandndx].u1s.fit = 1B
+		 ss.band[ss.transit[i].bandndx].u2s.fit = 1B
+         ldsecstarndx = ss.planet[ss.band[ss.transit[i].bandndx].starndx].linkstarndx
+         ldcoeffs_sec = quadld(ss.star[ldsecstarndx].logg.value, ss.star[ldsecstarndx].teff.value, ss.star[ldsecstarndx].feh.value, bands[i])
+         if finite(ldcoeffs_sec[0]) then ss.band[i].u1s.value = ldcoeffs_sec[0] $
+         else ss.band[i].u1s.value = 0d0
+         if finite(ldcoeffs_sec[1]) then ss.band[i].u2s.value = ldcoeffs_sec[1] $
+         else ss.band[i].u2s.value = 0d0
+         if ~keyword_set(silent) then begin
+            printandlog, "[MKSS] Fitting limb-darkened secondary eclipses for the following light curves:" + string(10B), logname
+            for j=0, n_elements(match)-1 do printandlog, string(j,tranfiles[j],format='(i2,x,a)'),logname
+            ;printandlog, "[MKSS]: WARNING!: Assuming planet 0 is linked to star 1 for limb-darkened secondary eclipses.", logname
+         endif
+      endif
    endfor
 
    if n_elements(dilutebandndx) gt 1 then begin
@@ -2929,6 +2926,96 @@ endif else begin
    ss.transit[0].variance.derive = 0
 endelse
 *ss.dilutebandndx = dilutebandndx
+
+;; three different ways to do the SED model
+if file_test(mistsedfile) or file_test(sedfile) or file_test(fluxfile) then begin
+
+   ;; overwrite the common block, in case it's been called
+   ;; before then updated (without exiting IDL)
+   ;; the chi2 doesn't matter here, use solar values
+   
+   if file_test(mistsedfile) then begin
+;      common BC_block, bcarrays, teffgrid, logggrid, fehgrid, avgrid, sedbands, mags, errs, filterprops, blend
+      sedchi2 = mistmultised(replicate(6000d0,nstars), replicate(4.41d0,nstars), replicate(0d0,nstars), $
+                             replicate(0d0,nstars), replicate(10d0,nstars), replicate(1d0,nstars), $
+                             replicate(1d0,nstars), mistsedfile, /redo,blend0=blend)
+      ss.mistsedfile = mistsedfile
+      ss.ndata += n_elements(mags) +2d0 ;; two more because of links between rstar and rstarsed, teff and teffsed
+   endif else if file_test(sedfile) then begin
+      sed_struct = exofast_multised(replicate(6000d0,nstars), replicate(4.41d0,nstars), replicate(0d0,nstars), $
+                                 replicate(0d0,nstars), replicate(10d0,nstars), replicate(1d0,nstars), $
+                                 replicate(1d0,nstars), sedfile, /redo, specphotpath=specphotpath,$
+                                 blend0=blend,rstar=replicate(1d0,nstars),$
+                                 sperrscale=ss.specphot.sperrscale.value[0],spzeropoint=ss.specphot.spzeropoint.value[0], derivethermal=derivethermal, dbstarndx=ss.dilutestarndx, dbbandnames=ss.band[*ss.dilutebandndx].name)
+      sedchi2 = sed_struct.sedchi2
+
+      for i=0, n_elements(sed_struct.sedthermal)-1 do begin
+         if finite(sed_struct.sedthermal[i]) then begin
+            thermndx = where(ss.band[ss.transit[*].bandndx].label eq derivethermal[i])
+            ;ss.band[ss.transit[thermndx].bandndx].thermal.value = sed_struct.sedthermal[i]
+            thermalchi2 = ((ss.band[ss.transit[thermndx].bandndx].thermal.value - sed_struct.sedthermal[i])/(sed_struct.sedthermal[i]*0.05d0))^2   
+			sedchi2 += thermalchi2
+         endif
+      endfor
+	  
+      ss.sedfile = sedfile
+      readcol, sedfile, junk, format='a', comment='#', /silent
+      ndata += n_elements(junk) + 2 ;; two more because of links between rstar and rstarsed, teff and teffsed
+      for i=0L, ss.nspecfiles-1 do begin
+         ss.specphot[i].label = specfiles[i]
+         ss.specphot[i].sperrscale.fit = 1
+         ss.specphot[i].sperrscale.derive = 1
+         ss.specphot[i].spzeropoint.fit = 1
+         ss.specphot[i].spzeropoint.derive = 1
+      endfor
+   endif else begin
+      printandlog, 'WARNING: FLUXFILE has been deprecated. MISTSEDFILE should be used instead.', logname
+      printandlog, 'NOTE: When using MISTSEDFILE, the C3K atmosphere is not computed directly. The plotted NextGen atmosphere is for aesthetics only.', logname
+
+      sedchi2 = exofast_sed(fluxfile, 6000d0,1d0,0d0,10d0,logg=4.41d0,met=0d0,alpha=0d0,/redo)
+      ss.fluxfile = fluxfile
+      readcol, fluxfile, junk, format='a', comment='#', /silent
+      ndata += n_elements(junk) + 2 ;; two more because of links between rstar and rstarsed, teff and teffsed
+   endelse
+   
+   starsused = where(total(blend,1) ne 0,nused)
+   for i=0L, nused-1 do begin
+      
+      ss.star[starsused[i]].errscale.fit = 1
+      ss.star[starsused[i]].errscale.derive = 1
+      ss.star[starsused[i]].distance.derive = 1
+      ss.star[starsused[i]].distance.fit = 1
+      ss.star[starsused[i]].fbol.derive = 1
+      ss.star[starsused[i]].parallax.derive = 1
+      ss.star[starsused[i]].av.fit = 1
+      ss.star[starsused[i]].av.derive = 1
+      
+      if teffsedfloor ne 0d0 then begin
+         ss.star[starsused[i]].teffsed.fit = 1
+         ss.star[starsused[i]].teffsed.derive = 1
+      endif
+      if fbolsedfloor ne 0d0 then begin
+         ss.star[starsused[i]].rstarsed.fit = 1
+         ss.star[starsused[i]].rstarsed.derive = 1
+      endif
+      if fehsedfloor ne 0d0 then begin
+         ss.star[starsused[i]].fehsed.fit = 1
+         ss.star[starsused[i]].fehsed.derive = 1
+      endif
+   endfor
+endif else begin
+   if mistsedfile ne '' then begin
+      printandlog, 'Could not find ' + mistsedfile, logname
+      return, -1
+   endif else if sedfile ne '' then begin
+      printandlog, 'Could not find ' + sedfile, logname
+      return, -1
+   endif else if fluxfile ne '' then begin
+      printandlog, 'Could not find ' + fluxfile, logname
+      return, -1
+   endif
+endelse
+
 
 ;; read in the RV files
 if ntel gt 0 then begin

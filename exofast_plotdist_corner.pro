@@ -323,7 +323,6 @@ for i=0, npars-1 do begin
    endfor
 
 endfor
-
 ;; reset back to default plotting parameters
 exofast_multiplot, /reset
 exofast_multiplot, /default 

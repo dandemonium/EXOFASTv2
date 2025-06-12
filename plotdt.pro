@@ -97,5 +97,5 @@ endelse
                            IMGXRANGE=dtrange, IMGYRANGE = [-1,1], RANGE=dtrange, $
                            YTICKS=1, YTickformat='(A1)', xticklen=0.2, xtitle='Fractional Variation', $
                            charsize=charsize, /noerase, position = [0.05, 0.08, 0.90, 0.10]
-   
+    cgPS2PDF, psname, unix_convert_cmd='ps2pdf -dPDFsettings=/printer', /showcmd
 endif

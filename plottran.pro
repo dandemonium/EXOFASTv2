@@ -231,7 +231,8 @@ for j=0, ss.ntran-1 do begin
                                     tc=ss.planet[i].tc.value[ndx],$
                                     rstar=ss.star[ss.planet[i].starndx].rstar.value[ndx]/AU,$
                                     au=au,$
-                                    c=ss.constants.c/ss.constants.au*ss.constants.day) - 1d0) 
+                                    c=ss.constants.c/ss.constants.au*ss.constants.day,$
+									u_sec=[band.u1s.value[ndx],band.u2s.value[ndx]]) - 1d0)
       prettytmpflux = reform(prettytmpflux,npretty,ninterp)
       prettyflux += prettytmpflux
       
@@ -257,7 +258,8 @@ for j=0, ss.ntran-1 do begin
                               tc=ss.planet[i].tc.value[ndx],$
                               rstar=ss.star[ss.planet[i].starndx].rstar.value[ndx]/AU,$
                               au=au,$
-                              c=ss.constants.c/ss.constants.au*ss.constants.day) - 1d0) 
+                              c=ss.constants.c/ss.constants.au*ss.constants.day,$
+                              u_sec=[band.u1s.value[ndx],band.u2s.value[ndx]]) - 1d0)
       tmpflux = reform(tmpflux,n_elements(trandata.bjd),ninterp)
       modelflux += tmpflux
       
@@ -668,5 +670,6 @@ if keyword_set(psname) then begin
    exofast_fixps, psname
 endif
 set_plot, mydevice
-cgPS2PDF,psname
+cgPS2PDF, psname, unix_convert_cmd='ps2pdf -dPDFsettings=/printer', /showcmd
+
 end

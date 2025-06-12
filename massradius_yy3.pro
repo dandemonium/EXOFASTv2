@@ -235,7 +235,7 @@ if keyword_set(debug) or keyword_set(psname) then begin
    endif
 
    set_plot, mydevice
-
+   cgPS2PDF, psname, unix_convert_cmd='ps2pdf -dPDFsettings=/printer -dEPSCrop', /showcmd
 endif
 
 return, chi2

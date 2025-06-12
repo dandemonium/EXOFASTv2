@@ -10,7 +10,7 @@ ss = mkss(rvpath=mcmcss.rvpath, tranpath=mcmcss.tranpath, astrompath=mcmcss.astr
           starndx=mcmcss.planet.starndx,$
           debug=mcmcss.debug, verbose=mcmcss.verbose, priorfile=mcmcss.priorfile, $
           fitrv=mcmcss.fitrv, fittran=mcmcss.fittran, fitdt=mcmcss.fitdt,rossiter=mcmcss.rossiter,$
-          fitlogmp=mcmcss.fitlogmp,$
+          fitlogmp=mcmcss.fitlogmp, fitrp=mcmcss.fitrp, $
           circular=mcmcss.circular,fitslope=mcmcss.fitslope, fitquad=mcmcss.fitquad,tides=mcmcss.tides,$
           ttvs=mcmcss.ttvs, tivs=mcmcss.tivs, tdeltavs=mcmcss.tdeltavs,$
           longcadence=mcmcss.longcadence,rejectflatmodel=mcmcss.rejectflatmodel,$

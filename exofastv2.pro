@@ -448,17 +448,15 @@
 ;
 ; BEER MODEL INPUTS:
 ;
-;  FITTHERMAL- An NTRANSITS boolean array specifying which transits to
+;  FITTHERMAL- An NBANDS string array specifying which transit bandpasses to
 ;              fit thermal emission for. This is what you want to set
 ;              to model an isolated secondary eclipse. When set, the
 ;              transit will be modeled with a baseline of 1 between t2
 ;              and t3 of the secondary eclipse and 1 + thermal
 ;              emission (in PPM) out of eclipse.
 ;
-;              NOTE: earlier versions of this array specified the band
-;              name and all similar bands were linked together. This
-;              functionality can be recreated by linking the THERMAL
-;              parameters in the prior file for common bands.
+;              NOTE: earlier versions of this array specified the transit
+;              name. Now, all similar bands were linked together. 
 ;
 ;  FITELLIP  - A string array specifying which bands to fit an
 ;              ellipsoidal variation amplitude for. Note: this does
@@ -481,13 +479,28 @@
 ;              amplitude is fit directly, it will *not* constrain the
 ;              planetary mass (set DERIVEBEAM instead).
 ;
-;  DERIVEBEAM- An NPLANET boolean array that specifies which planets
+;  DERIVEBEAM- An NPLANETS boolean array that specifies which planets
 ;              to model a doppler beaming signal. If this beaming
 ;              amplitude is derived (from K), it will constrain the
 ;              planetary mass through Faigler & Mazeh, 2011, eq 1 (set
 ;              FITBEAM instead to model the beaming but break this
 ;              connection).
 ;
+; DERIVETHERMAL - An NBANDS string array specifying the transit bandpasses
+;                 for which the THERMAL amplitude should be derived from
+;                 the stellar SED models' luminosity ratios. Currently only
+;                 works when fitting NextGen model atmospheres (i.e. when
+;                 specifying SEDFILE=). NOTE: ONLY WORKS FOR SECONDARY ECLIPSES
+;                 from one planet; eclipses from multiple planets are not
+;                 supported, due to THERMAL being stored in a BAND structure
+;                 rather than a PLANET structure.
+
+; LIMBDARKSECONDARY - An NTRANSITS boolean array specifying the light curves
+;                     to which limb-darkened secondary eclipse models should be
+;                     fit. Requires setting either FITTHERMAL or DERIVETHERMAL.
+;                     NOTE: Computes limb darkening coefficients FOR STAR 1 ONLY,
+;                     so make sure the planet's parameters are linked to Star 1's.
+
 ; STAR INPUTS:
 ;
 ;  NSTARS    - The number of stars to model. Default=1. Must be larger
@@ -496,6 +509,10 @@
 ;  STARNDX   - An NPLANETS long array that specifies the index of the
 ;              star each planet orbits. The default is 0 for all.
 ; 
+;  LINKSTARNDX - An NPLANETS long array that specifies the index of the
+;              star structure to which the planet structure is linked.
+;              Used for limb-darkened secondary eclipses. The default is -1 for all.
+;
 ;  SEDDEBLEND- An NTRANSITSxNSTARS boolean array specifying which
 ;              transits are blended with which stars. These will
 ;              automatically be deblended according to the SED models
@@ -744,6 +761,11 @@
 ;             more realistic prior, but is problematic for low SNR RVs
 ;             where the small-planet volume is infinite. It also
 ;             excludes negative masses which biases the mass high.
+;
+;  FITRP    - By default, planet radius is derived from P and RSTAR. Set this
+;             keyword to fit for RPSUN and derive P from RPSUN and RSTAR. This may
+;             allow tighter linking between RPSUN and a stellar RSTAR, but may be
+;             problematic for low SNR transits where the small-planet volume is infinite. 
 ;
 ;  NOVCVE   - When only transits are fit, eccentricity is
 ;             parameterized as VCVE. Set this to keep the usual
@@ -1191,7 +1213,7 @@ pro exofastv2, priorfile=priorfile, $
                fitspline=fitspline, splinespace=splinespace, $
                fitramp=fitramp, fitwavelet=fitwavelet, $
                ;; reparameterization inputs
-               fitlogmp=fitlogmp,$
+               fitlogmp=fitlogmp, fitrp=fitrp, $
                novcve=novcve, nochord=nochord, fitsign=fitsign, $
                fittt=fittt, earth=earth, $
                ;; plotting inputs
@@ -1213,7 +1235,8 @@ pro exofastv2, priorfile=priorfile, $
                mksummarypg=mksummarypg,$
                nocovar=nocovar, $
                plotonly=plotonly, bestonly=bestonly, $
-               badstart=badstart,derivethermal=derivethermal
+               badstart=badstart,derivethermal=derivethermal, $
+			   limbdarksecondary=limbdarksecondary, linkstarndx=linkstarndx
                
 ;; this is the stellar system structure
 COMMON chi2_block, ss
@@ -1261,7 +1284,7 @@ if lmgr(/vm) or lmgr(/runtime) then begin
              noprimary=noprimary, requiresecondary=requiresecondary,$
              fitspline=fitspline, splinespace=splinespace, $
              fitramp=fitramp, fitwavelet=fitwavelet, $              
-             fitlogmp=fitlogmp,$
+             fitlogmp=fitlogmp, fitrp=fitrp, $
              novcve=novcve, nochord=nochord, fitsign=fitsign, $
              fittt=fittt, earth=earth, $             
              transitrange=transitrange,rvrange=rvrange,$
@@ -1278,7 +1301,8 @@ if lmgr(/vm) or lmgr(/runtime) then begin
              mksummarypg=mksummarypg,$
              nocovar=nocovar,$
              plotonly=plotonly, bestonly=bestonly,$
-             logname=logname
+             logname=logname, derivethermal=derivethermal, $
+             limbdarksecondary=limbdarksecondary, linkstarndx=linkstarndx
 
 endif
 
@@ -1358,7 +1382,8 @@ if nplanets ne 0 and keyword_set(refinestar) then begin
              starndx=starndx,priorfile=priorfile, $
              teffemfloor=teffemfloor, fehemfloor=fehemfloor, rstaremfloor=rstaremfloor,ageemfloor=ageemfloor,$
              yy=yy, torres=torres, nomist=nomist, parsec=parsec, mann=mann, logname=logname, debug=stardebug, verbose=verbose, $
-             mkgif=mkgif,chi2func=chi2func,prefix=prefix,derivethermal=derivethermal)
+             mkgif=mkgif,chi2func=chi2func,prefix=prefix,derivethermal=derivethermal, limbdarksecondary=limbdarksecondary, $
+			 linkstarndx=linkstarndx)
    if (size(ss))[2] ne 8 then return
 
    pars = str2pars(ss,scale=scale,name=starparnames, angular=angular)
@@ -1412,7 +1437,7 @@ ss = mkss(priorfile=priorfile, $
           fitspline=fitspline, splinespace=splinespace, $
           fitramp=fitramp, fitwavelet=fitwavelet, $            
           ;; reparameterization inputs
-          fitlogmp=fitlogmp,$
+          fitlogmp=fitlogmp, fitrp=fitrp, $
           novcve=novcve, nochord=nochord, fitsign=fitsign, $
           fittt=fittt, earth=earth, $
           ;; plotting inputs
@@ -1422,7 +1447,8 @@ ss = mkss(priorfile=priorfile, $
           debug=debug, verbose=verbose, delay=delay, $
           ;; internal inputs
           chi2func=chi2func, $
-          logname=logname,derivethermal=derivethermal)
+          logname=logname,derivethermal=derivethermal,$
+		  limbdarksecondary=limbdarksecondary, linkstarndx=linkstarndx)
 
 if (size(ss))[2] ne 8 then begin
    badstart=1
@@ -1538,7 +1564,7 @@ if nthreads gt 1 then begin
          'noprimary=noprimary, requiresecondary=requiresecondary,'+$
          'fitspline=fitspline, splinespace=splinespace,'+$
          'fitramp=fitramp, fitwavelet=fitwavelet,'+$
-         'fitlogmp=fitlogmp,'+$
+         'fitlogmp=fitlogmp, fitrp=fitrp,'+$
          'novcve=novcve, nochord=nochord, fitsign=fitsign,'+$
          'fittt=fittt, earth=earth,'+$
          'transitrange=transitrange,rvrange=rvrange,'+$
@@ -1546,7 +1572,8 @@ if nthreads gt 1 then begin
          'debug=debug, verbose=verbose,delay=delay,'+$
          '/silent,'+$
          'chi2func=chi2func,'+$
-         'logname=logname, derivethermal=derivethermal)'
+         'logname=logname, derivethermal=derivethermal,'+$
+		 'limbdarksecondary=limbdarksecondary, linkstarndx=linkstarndx)'
    endfor
 endif
 
@@ -1772,7 +1799,7 @@ if nthreads gt 1 then begin
          'noprimary=noprimary, requiresecondary=requiresecondary,'+$
          'fitspline=fitspline, splinespace=splinespace,'+$
          'fitramp=fitramp, fitwavelet=fitwavelet,'+$
-         'fitlogmp=fitlogmp,'+$
+         'fitlogmp=fitlogmp, fitrp=fitrp,'+$
          'novcve=novcve, nochord=nochord, fitsign=fitsign,'+$
          'fittt=fittt, earth=earth,'+$
          'transitrange=transitrange,rvrange=rvrange,'+$
@@ -1780,7 +1807,8 @@ if nthreads gt 1 then begin
          'debug=debug, verbose=verbose,delay=delay,'+$
          '/silent,'+$
          'chi2func=chi2func,'+$
-         'logname=logname, derivethermal=derivethermal)'
+         'logname=logname, derivethermal=derivethermal,'+$
+		 'limbdarksecondary=limbdarksecondary, linkstarndx=linkstarndx)'
    endfor
 endif
 
@@ -1892,7 +1920,7 @@ mcmcss = mkss(priorfile=priorfile, $
               fitspline=fitspline, splinespace=splinespace, $
               fitramp=fitramp, fitwavelet=fitwavelet, $            
               ;; reparameterization inputs
-              fitlogmp=fitlogmp,$
+              fitlogmp=fitlogmp, fitrp=fitrp, $
               novcve=novcve, nochord=nochord, fitsign=fitsign, $
               fittt=fittt, earth=earth, $
               ;; plotting inputs
@@ -1905,7 +1933,8 @@ mcmcss = mkss(priorfile=priorfile, $
               /silent, $
               chi2func=chi2func, $
               logname=logname, $
-              best=best, derivethermal=derivethermal)
+              best=best, derivethermal=derivethermal, $
+			  limbdarksecondary=limbdarksecondary, linkstarndx=linkstarndx)
 
 if (size(mcmcss))[2] ne 8 then return
 

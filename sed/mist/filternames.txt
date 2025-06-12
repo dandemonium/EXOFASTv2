@@ -1,4 +1,5 @@
 # Keivan's filter names, MIST filter names, Claret Filter names
+CHEOPS Kepler_Kp CHEOPS CHEOPS_CHEOPS.band
 H2M 2MASS_H H
 J2M 2MASS_J J
 K2M 2MASS_Ks K
@@ -100,8 +101,8 @@ Unsupported IRAC_4.5 Spit45
 Unsupported IRAC_5.8 Spit58
 Unsupported IRAC_8.0 Spit80
 Unsupported J129 Unsupported
-Unsupported Kepler_D51 Unsupported
-Unsupported Kepler_Kp Kepler
+Kepler_D51 Kepler_D51 Kepler
+Kepler Kepler_Kp Kepler
 Unsupported LSST_g Unsupported
 Unsupported LSST_i Unsupported
 Unsupported LSST_r Unsupported

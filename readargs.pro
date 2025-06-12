@@ -31,7 +31,7 @@ pro readargs, argfile, priorfile=priorfile, $
               noprimary=noprimary, requiresecondary=requiresecondary,$
               fitspline=fitspline, splinespace=splinespace, $
               fitramp=fitramp, fitwavelet=fitwavelet, $              
-              fitlogmp=fitlogmp,$
+              fitlogmp=fitlogmp, fitrp=fitrp, $
               novcve=novcve, nochord=nochord, fitsign=fitsign, $
               fittt=fittt, earth=earth, $             
               transitrange=transitrange,rvrange=rvrange,$
@@ -48,7 +48,8 @@ pro readargs, argfile, priorfile=priorfile, $
               mksummarypg=mksummarypg,$
               nocovar=nocovar,$
               plotonly=plotonly, bestonly=bestonly,$
-              logname=logname, fitgaia=fitgaia
+              logname=logname, fitgaia=fitgaia, derivethermal=derivethermal, $
+			  limbdarksecondary=limbdarksecondary
 
 ;; first get the log name so we can log any errors
 line = ''
@@ -213,7 +214,9 @@ while not eof(lun) do begin
             fitdt = boolean(json_parse(entries[1],/toarray))
          endif else if strupcase(strtrim(entries[0],2)) eq 'FITLOGMP' then begin
             fitlogmp = boolean(json_parse(entries[1],/toarray))
-         endif else if strupcase(strtrim(entries[0],2)) eq 'TTVS' then begin
+         endif else if strupcase(strtrim(entries[0],2)) eq 'FITRP' then begin
+            fitrp = boolean(json_parse(entries[1],/toarray))
+		 endif else if strupcase(strtrim(entries[0],2)) eq 'TTVS' then begin
             ttvs = boolean(json_parse(entries[1],/toarray))
          endif else if strupcase(strtrim(entries[0],2)) eq 'TIVS' then begin
             tivs = boolean(json_parse(entries[1],/toarray))
@@ -257,6 +260,12 @@ while not eof(lun) do begin
             usernote = entries[1]
          endif else if strupcase(strtrim(entries[0],2)) eq 'MKSUMMARYPG' then begin
             mksummarypg = boolean(entries[1])
+         endif else if strupcase(strtrim(entries[0],2)) eq 'DERIVETHERMAL' then begin
+            derivethermal = json_parse(entries[1],/toarray)
+         endif else if strupcase(strtrim(entries[0],2)) eq 'LIMBDARKSECONDARY' then begin
+            limbdarksecondary = boolean(entries[1],/toarray)
+         endif else if strupcase(strtrim(entries[0],2)) eq 'LINKSTARNDX' then begin
+            linkstarndx = boolean(entries[1],/toarray)
          endif else begin
             printandlog, entries[0] + ' argument not recognized', logname
          endelse

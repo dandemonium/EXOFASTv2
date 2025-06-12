@@ -336,6 +336,13 @@ if nbad gt 0 then begin
    return, !values.d_infinity
 endif
 
+;; 0 < rpsun < 2000
+bad = where(ss.planet.rpsun.value lt 0d0 or ss.planet.rpsun.value gt 2000d0,nbad)
+if nbad gt 0 then begin
+   if ss.debug or ss.verbose then printandlog, 'rpsun is bad (' + strtrim(ss.planet[bad].rpsun.value,2) + ')', ss.logname
+   return, !values.d_infinity
+endif
+
 if ss.nastrom gt 0 then begin
    ;; 0.01 < astrometric error scaling < 100
    bad = where(ss.astrom.astromscale.value lt 1d-2 or ss.astrom.astromscale.value  gt 1d2, nbad)
@@ -931,7 +938,7 @@ if file_test(ss.mistsedfile) or file_test(ss.fluxfile) or file_test(ss.sedfile) 
                               atmospheres=atmospheres, wavelength=wavelength,$
                               range=ss.sedrange)
    endif else if file_test(ss.sedfile) then begin
-      sedarr = exofast_multised(teffsed, ss.star.logg.value,fehsed, $
+      sed_struct = exofast_multised(teffsed, ss.star.logg.value,fehsed, $
                                   ss.star.av.value, $
                                   ss.star.distance.value, lstarsed, $
                                   ss.star[0].errscale.value, $
@@ -939,18 +946,24 @@ if file_test(ss.mistsedfile) or file_test(ss.fluxfile) or file_test(ss.sedfile) 
                                   debug=ss.debug, psname=epsname,$
                                   range=ss.sedrange,specphotpath=ss.specphotpath, $
                                   sperrscale=ss.specphot.sperrscale.value,$
-                                  spzeropoint=ss.specphot.spzeropoint.value, derivethermal=ss.derivethermal)
+                                  spzeropoint=ss.specphot.spzeropoint.value, derivethermal=ss.derivethermal, $
+								  dbstarndx=ss.dilutestarndx, dbbandnames=ss.band[*ss.dilutebandndx].name)
+      sedchi2 += sed_struct.sedchi2
 
-      sedchi2 += sedarr[0]
-      
-      if keyword_set(ss.derivethermal) then begin
-         if finite(sedarr[1]) then begin
-            thermndx = where(ss.band[ss.transit[*].bandndx].label eq 'TESS')
-            ss.band[ss.transit[thermndx].bandndx].thermal.value = sedarr[1]
-			;print,sedarr[1],ss.band[ss.transit[thermndx].bandndx].thermal.value
-	        ;stop
+	  ;; DJS: pass derived thermal emission to the corresponding THERMAL parameter
+      ;; if dilution is being fit
+	  ;; will need to change this: ideally, derived on per-transit basis, with band.label lookups on per-transit basis
+      ;; CHANGED 2025-06-11 to be a chi^2 penalty instead, to avoid massive slowdown in derivepars.pro after MCMC
+      for i=0, n_elements(sed_struct.sedthermal)-1 do begin
+         if finite(sed_struct.sedthermal[i]) then begin
+            thermndx = where(ss.band[ss.transit[*].bandndx].label eq ss.derivethermal[i])
+			if thermndx[0] ne -1 then $
+            ;ss.band[ss.transit[thermndx].bandndx].thermal.value = sed_struct.sedthermal[i]
+               thermalchi2 = ((ss.band[ss.transit[thermndx[0]].bandndx].thermal.value - sed_struct.sedthermal[i])/(sed_struct.sedthermal[i]*0.05d0))^2 $
+			   else thermalchi2 = 0
+			chi2 += thermalchi2
          endif
-      endif
+      endfor
 
    endif else begin
       ;; Keivan Stassun's SED
@@ -979,7 +992,6 @@ if file_test(ss.mistsedfile) or file_test(ss.fluxfile) or file_test(ss.sedfile) 
       printandlog, 'SED penalty = ' + strtrim(sedchi2,2), ss.logname
 
 endif
-
 ;; Apply Chen & Kipping Mass-Radius relation 
 ;; http://adsabs.harvard.edu/abs/2017ApJ...834...17C
 for j=0, ss.nplanets-1 do begin
@@ -1084,12 +1096,15 @@ for j=0, ss.ntel-1 do begin
       if ss.planet[i].fitrv then begin      
          ;; rvbjd = rv.bjd ;; usually sufficient (See Eastman et al., 2013)
 
-
-
          q = ss.star[ss.planet[i].starndx].mstar.value/ss.planet[i].mpsun.value
          if rv.planet eq i then begin
             ;; time in target barycentric frame (expensive)
 ;; this needs to be debugged
+            if ss.telescope[j].label eq 'KPNO-Fairborn-sb2' then $
+			qcm=(total(ss.star[*].mstar.value) - ss.planet[i].mpsun.value)/ss.planet[i].mpsun.value $
+            else $
+            qcm = q
+
             rvbjd = bjd2target(rv.bjd, inclination=ss.planet[i].i.value, $
                                a=ss.planet[i].a.value, tp=ss.planet[i].tp.value, $
                                period=ss.planet[i].period.value, e=ss.planet[i].e.value,$
@@ -1229,10 +1244,12 @@ endfor
 
 ;; compute the stellar flux for each star in each transit band 
 ;; if dilution is being fit
+;if (*ss.dilutebandndx)[0] ne -1 then starndx = dbstarndx ; DJS
 if (*ss.dilutebandndx)[0] ne -1 then begin
    starndx = ss.dilutestarndx
    bandndx = *ss.dilutebandndx
-   starflux = deblend(ss.star[starndx].teff.value, ss.star[starndx].logg.value,$
+   if file_test(ss.sedfile) then starflux = sed_struct.lcblendflux else $
+     starflux = mistdeblend(ss.star[starndx].teff.value, ss.star[starndx].logg.value,$
                       ss.star[starndx].feh.value, ss.star[starndx].av.value, $
                       ss.star[starndx].distance.value, $
                       ss.star[starndx].lstar.value, ss.band[bandndx].name)
@@ -1240,18 +1257,24 @@ endif
 
 ;; Transit model
 for j=0L, ss.ntran-1 do begin
-
    transit = *(ss.transit[j].transitptrs)
    
    if ss.fitdilute[j] then begin
-
       matchstar = where(ss.seddeblend[j,*])
       ;; dilute transit according to other stars' SEDs
       if ss.nstars gt 1 and (matchstar[0] ne -1) then begin
          matchband = (where(*ss.dilutebandndx eq ss.transit[j].bandndx))[0]
          planetndx = ss.transit[j].pndx
          starndx = ss.planet[planetndx].starndx
-         dilute = 1d0-starflux[matchband,starndx]/total(starflux[matchband,matchstar])      
+		 ;;; DJS edit 2025-05-23 to account for "thermal emission" of secondary star in EB
+         ;if (ss.band[ss.transit[j].bandndx].thermal.value 
+		;' if (keyword_set(ss.tra) or keyword_set(ss.derivethermal) then dilute = 1d0-
+		 if ((where(ss.band[ss.transit[j].bandndx].label eq ss.derivethermal) ne -1) or (where(ss.band[ss.transit[j].bandndx].label eq ss.fitthermal) ne -1)) then begin ;include the thermal emission! 
+   		    if ss.verbose then printandlog, "Accounting for " + ss.band[ss.transit[j].bandndx].label + " thermal emission in the deblending procedure...", ss.logname
+            if planetndx eq 0 then secstarflux = starflux[matchband,planetndx+1] else secstarflux = 0d0
+			dilute = 1d0-(starflux[matchband,starndx] + secstarflux)/total(starflux[matchband,matchstar]) 
+
+         endif else dilute = 1d0-starflux[matchband,starndx]/total(starflux[matchband,matchstar]) 
          dilutechi2 = ((ss.transit[j].dilute.value - dilute)/(dilute*0.05d0))^2   
          chi2 += dilutechi2
 
@@ -1273,7 +1296,7 @@ for j=0L, ss.ntran-1 do begin
    band = ss.band[ss.transit[j].bandndx]
    planetndx = ss.transit[j].pndx
    starndx = ss.planet[planetndx].starndx
-
+   linkstarndx = ss.planet[planetndx].linkstarndx
    ;; quadratic limb darkening
    if ss.transit[j].claret then begin
       ldcoeffs = quadld(ss.star[starndx].logg.value, $
@@ -1297,6 +1320,28 @@ for j=0L, ss.ntran-1 do begin
       chi2 += ((band.u2.value-u2claret)/u2err)^2
       if ss.verbose then printandlog, band.label + ' u1 penalty = ' + strtrim(((band.u1.value-u1claret)/u1err)^2,2),ss.logname
       if ss.verbose then printandlog, band.label + ' u2 penalty = ' + strtrim(((band.u2.value-u2claret)/u2err)^2,2),ss.logname
+	  
+      if ss.transit[j].limbdarksecondary then begin
+         ldcoeffs_sec = quadld(ss.star[linkstarndx].logg.value, $
+                               ss.star[linkstarndx].teff.value, $
+                               ss.star[linkstarndx].feh.value, band.name, $
+                               verbose=ss.verbose, logname=ss.logname)
+         u1sclaret = ldcoeffs_sec[0]
+         u2sclaret = ldcoeffs_sec[1]
+		 if ~finite(u1sclaret) or ~finite(u2sclaret) then begin
+            if ss.verbose then begin
+               printandlog, band.label + ' limb darkening coefficients are not defined at this ' +$
+                            'Teff (' + strtrim(ss.star[linkstarndx].teff.value,2) + ', ' + $
+                            'logg (' + strtrim(ss.star[linkstarndx].logg.value,2) + ', and ' + $
+                            '[Fe/H] (' + strtrim(ss.star[linkstarndx].feh.value,2) + '; rejecting step',ss.logname
+            endif
+            return, !values.d_infinity
+		 endif
+         chi2 += ((band.u1s.value-u1sclaret)/u1err)^2
+         chi2 += ((band.u2s.value-u2sclaret)/u2err)^2
+         if ss.verbose then printandlog, band.label + ' u1s penalty = ' + strtrim(((band.u1s.value-u1sclaret)/u1err)^2,2),ss.logname
+         if ss.verbose then printandlog, band.label + ' u2s penalty = ' + strtrim(((band.u2s.value-u2sclaret)/u2err)^2,2),ss.logname   
+      endif  
    endif
 
    ;; Kepler Long candence data; create several model points and average   
@@ -1340,7 +1385,8 @@ for j=0L, ss.ntran-1 do begin
                                     rstar=ss.star[ss.planet[i].starndx].rstar.value/AU,$
                                     ;x1=x1,y1=y1,z1=z1,$
                                     au=au,$
-                                    c=ss.constants.c/ss.constants.au*ss.constants.day) - 1d0)
+                                    c=ss.constants.c/ss.constants.au*ss.constants.day,$
+									u_sec=[band.u1s.value, band.u2s.value]) - 1d0)
 
          modelflux += tmpmodelflux
 
@@ -1355,11 +1401,11 @@ for j=0L, ss.ntran-1 do begin
       endif
    endif
 
-   ;; ellipsoidal variations -- commented out by DJS; eBEER formulae put in exofast_tran.pro
-;   if band.ellipsoidal.value ne 0d0 then begin
-;      minperiod = min(ss.planet.period.value,ndx)
-;      modelflux = modelflux * (1d0 - band.ellipsoidal.value/1d6*cos(2d0*!dpi*(transitbjd-ss.planet[ndx].tc.value)/(ss.planet[ndx].period.value/2d0)))
-;   endif
+   ;; ellipsoidal variations -- see also exofast_tran.pro
+   if band.ellipsoidal.value ne 0d0 then begin
+      minperiod = min(ss.planet.period.value,ndx)
+      modelflux = modelflux * (1d0 - band.ellipsoidal.value/1d6*cos(2d0*!dpi*(transitbjd-ss.planet[ndx].tc.value)/(ss.planet[ndx].period.value/2d0)))
+   endif
 
    ;; now integrate the model points (before detrending)
    ;; Riemann integration beats trapezoidal and simpsons wins when
