@@ -156,7 +156,8 @@ Unsupported WFC3_IR_F128N Unsupported
 Unsupported WFC3_IR_F130N Unsupported
 Unsupported WFC3_IR_F132N Unsupported
 Unsupported WFC3_IR_F139M Unsupported
-Unsupported WFC3_IR_F140W Unsupported
+#Unsupported WFC3_IR_F140W Unsupported
+Unsupported WFC3_IR_F140W WFC3_IR_G141
 Unsupported WFC3_IR_F153M Unsupported
 Unsupported WFC3_IR_F160W Unsupported
 Unsupported WFC3_IR_F164N Unsupported

@@ -1772,7 +1772,7 @@ mpsun.latex = 'M_P'
 mpsun.label = 'mpsun'
 mpsun.cgs = 1.9891d33
 mpsun.derive = 0
-mpsun.value = 0.001d0
+mpsun.value = 0.001
 if nplanets ne 0 then mpsun.fit = 1
 
 msini = parameter
