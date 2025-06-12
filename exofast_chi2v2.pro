@@ -1658,7 +1658,7 @@ for i=0L, ss.nplanets-1L do begin
          device, /close
          device, encapsulated=0
          set_plot, mydevice
-      endif
+	  endif
       
    endif
 endfor

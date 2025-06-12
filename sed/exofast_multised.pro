@@ -574,7 +574,7 @@ if keyword_set(debug) or keyword_set(psname) eq 1 then begin
                         format='(a,x,f0.6,x,f0.6,x,e0.6,x,e0.6,x,e0.6,x,e0.6,x,a)'
    endif
    set_plot, mydevice
-    cgPS2PDF, psname, unix_convert_cmd='ps2pdf -dPDFsettings=/printer -dEPSCrop', /showcmd
+   cgPS2PDF, psname, unix_convert_cmd='ps2pdf -dPDFsettings=/printer -dEPSCrop', /showcmd
 end
 
 ;sedarr = [sedchi2, thermal, lcblendflux] ;, blendflux]
