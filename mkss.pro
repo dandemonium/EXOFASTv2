@@ -3027,7 +3027,6 @@ if ntel gt 0 then begin
       if ~keyword_set(silent) then printandlog, string(i,rvfiles[i],format='(i2,x,a)'),logname
       *(ss.telescope[i].rvptrs) = readrv_detrend(rvfiles[i], detrendpar=detrend)
       ss.telescope[i].label = (*(ss.telescope[i].rvptrs)).label
-
       minbjd = min((*(ss.telescope[i].rvptrs)).bjd,max=maxbjd)
       if minbjd lt minallbjd then minallbjd = minbjd
       if maxbjd gt maxallbjd then maxallbjd = maxbjd

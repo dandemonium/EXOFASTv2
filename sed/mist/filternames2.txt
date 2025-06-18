@@ -1,4 +1,8 @@
 # Keivan's filter names, MIST filter names, Claret Filter names, svo filter names
+Unsupported Unsupported Unsupported INT_WFC.RGO_u
+Unsupported Unsupported Unsupported INT_WFC.Gunn_g
+Unsupported Unsupported Unsupported INT_WFC.Gunn_r
+Unsupported Unsupported Unsupported INT_WFC.Gunn_i
 CHEOPS Kepler_Kp CHEOPS CHEOPS_CHEOPS.band
 H2M 2MASS_H H 2MASS_2MASS.H
 J2M 2MASS_J J 2MASS_2MASS.J
