@@ -563,7 +563,7 @@ if keyword_set(debug) or keyword_set(psname) eq 1 then begin
 		 ;; interpolated model atmospheres			   
          exofast_forprint, wavelength, sed[j,*], textout=residualfilename+'.ng_atmosphere.star_'+strtrim(j,1)+'.txt', $
                            comment='# note: plots use alog10(smooth(lamflam, 10))' + string(10B) + $
-						           '# wavelength (um), lamflam (cgs)', format='(f0.6,x,f0.6)'
+						           '# wavelength (um), lamflam (cgs)';, format='(f0.6,x,f0.6)'
 	  endfor 
 
       ;; file containing total model flux from all stars in each band
