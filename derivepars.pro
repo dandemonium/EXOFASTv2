@@ -121,7 +121,7 @@ for i=0, ss.nplanets-1 do begin
    ss.planet[i].q.value = ss.planet[i].mpsun.value/ss.star[ss.planet[i].starndx].mstar.value                           ;; unitless
 
    ;; derive the radius of the planet
-   if ss.planet[i].rpsun.fit then ss.planet[i].p.value = ss.planet[i].rpsun.value/ss.star[ss.planet[i].starndx].rstar.value $
+   if ss.fitrp then ss.planet[i].p.value = ss.planet[i].rpsun.value/ss.star[ss.planet[i].starndx].rstar.value $
    else ss.planet[i].rpsun.value = ss.planet[i].p.value*ss.star[ss.planet[i].starndx].rstar.value ;; r_sun
    ss.planet[i].rp.value = ss.planet[i].rpsun.value/rjup ;; r_jupiter
    ss.planet[i].rpearth.value = ss.planet[i].rpsun.value/rearth ;; r_earth
@@ -466,27 +466,19 @@ endelse
 
 endfor
 
-;if where(ss.derivethermal eq '') eq -1 then begin ;; ADDED BY DJS to see if this is reasonably quick...
-;stop
-;   for i=0, n_elements(ss.star[0].teffsed.value)-1 do begin
-;      fehsed = ss.star.feh.value[i]
-;      teffsed = ss.star.teffsed.value[i]
-;      lstarsed = 4d0*!dpi*ss.star.rstarsed.value[i]^2*teffsed^4*ss.constants.sigmab/ss.constants.lsun*ss.constants.rsun^2 ;; lsun
-
 ;if where(ss.derivethermal eq '') eq -1 then begin
 ;   for i=0, n_elements(ss.star[0].teffsed.value)-1 do begin
 ;      fehsed = ss.star[*].feh.value[i]
 ;      teffsed = ss.star[*].teffsed.value[i]
 ;      lstarsed = 4d0*!dpi*ss.star[*].rstarsed.value[i]^2*teffsed^4*ss.constants.sigmab/ss.constants.lsun*ss.constants.rsun^2 ;; lsun
 ;      if where(ss.specphotpath eq '') ne -1 then begin
-;         sed_struct = exofast_multised(teffsed, ss.star[*].logg.value[i], fehsed, $
+;      sed_struct = exofast_multised(teffsed, ss.star[*].logg.value[i], fehsed, $
 ;                                    ss.star[*].av.value[i], $
 ;                                    ss.star[*].distance.value[i], lstarsed, $
 ;                                    ss.star[*].errscale.value[i], $
 ;                                    ss.sedfile, rstar=ss.star[*].rstarsed.value[i],$
-;                                    debug=ss.debug, psname=epsname,$
-;                                    range=ss.sedrange,derivethermal=ss.derivethermal, $
-;                                    dbstarndx=ss.dilutestarndx, dbbandnames=ss.band[*ss.dilutebandndx].name)
+;                                    debug=ss.debug,$
+;                                    range=ss.sedrange,derivethermal=ss.derivethermal)
 ;	  endif else begin
 ;         sed_struct = exofast_multised(teffsed, ss.star[*].logg.value[i], fehsed, $
 ;                                    ss.star[*].av.value[i], $
@@ -499,10 +491,10 @@ endfor
 ;                                    spzeropoint=ss.specphot.spzeropoint.value, derivethermal=ss.derivethermal, $
 ;                                    dbstarndx=ss.dilutestarndx, dbbandnames=ss.band[*ss.dilutebandndx].name)
 ;      endelse
-;	  for i=0, n_elements(sed_struct.sedthermal)-1 do begin
-;         if finite(sed_struct.sedthermal[i]) then begin
-;            thermndx = where(ss.band[ss.transit[*].bandndx].label eq ss.derivethermal[i])
-;            ss.band[ss.transit[thermndx].bandndx].thermal.value = sed_struct.sedthermal[i]
+;	  for j=0, n_elements(sed_struct.sedthermal)-1 do begin
+;         if finite(sed_struct.sedthermal[j]) then begin
+;            thermndx = where(ss.band[ss.transit[*].bandndx].label eq ss.derivethermal[j])
+;            ss.band[ss.transit[thermndx].bandndx].thermal.value[i] = sed_struct.sedthermal[j]
 ;         endif
 ;      endfor
 ;   endfor

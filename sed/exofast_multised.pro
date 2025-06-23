@@ -183,14 +183,15 @@ endif; else begin
 ;endelse
 
 ;;; Added by DJS: deblend the light curves
-if ((ndbbands gt 0) and (total(dbstarndx) gt 0)) then begin
-   for j=0L, n_elements(dbstarndx)-1 do begin
-      for i=0L, ndbbands-1 do begin
-         sed_struct.lcblendflux[i,j] = total(sed[dbstarndx[j],*]*deblend_filter_curves[i,*])/deblend_filter_curve_sum[i]
+if keyword_set(dbstarndx) then begin
+   if ((ndbbands gt 0) and (total(dbstarndx) gt 0)) then begin
+      for j=0L, n_elements(dbstarndx)-1 do begin
+         for i=0L, ndbbands-1 do begin
+            sed_struct.lcblendflux[i,j] = total(sed[dbstarndx[j],*]*deblend_filter_curves[i,*])/deblend_filter_curve_sum[i]
+         endfor
       endfor
-   endfor
-endif ;else lcblendflux = !values.d_infinity
-
+   endif ;else lcblendflux = !values.d_infinity
+endif
 sedchi2=0d0
 ;; chi2 from broad band photometry
 relative = where(modelfluxneg ne 0,complement=absolute)
