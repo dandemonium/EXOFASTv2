@@ -265,7 +265,7 @@ if n_elements(fitlogmp) ne nplanets and n_elements(fitlogmp) gt 1 then begin
    return, -1
 endif
 if n_elements(fitrp) ne nplanets and n_elements(fitrp) gt 1 then begin
-   printandlog, "fitrp must have NPLANETS (" + strtrim(nplanets,2) + ") elements",logname
+   printandlog, "FITRP must have NPLANETS (" + strtrim(nplanets,2) + ") elements",logname
    return, -1
 endif
 if n_elements(novcve) ne nplanets and n_elements(novcve) gt 1 then begin
@@ -1385,7 +1385,7 @@ p.latex = 'R_P/R_*'
 p.label = 'p'
 p.scale = 1d-1
 if nplanets eq 0 then p.derive = 0 $
-else p.fit = 1
+else if ~keyword_set(fitrp) then p.fit = 1 
 
 ar = parameter
 ar.unit = ''
@@ -1950,7 +1950,7 @@ thermal.label = 'thermal'
 thermal.scale = 1d4
 thermal.unit = 'ppm'
 thermal.fit = 0
-thermal.derive = 0
+;thermal.derive = 0
 
 reflect = parameter
 reflect.description = 'Reflection from the planet'
@@ -2158,7 +2158,8 @@ planet = create_struct($
          period.label,period,$    ;; fundamental (most interesting) parameters
          rp.label,rp,$
          rpearth.label,rpearth,$
-         mp.label,mp,$
+         rpsun.label,rpsun,$ ;; added by DJS 2025-06-22
+		 mp.label,mp,$
          mpsun.label,mpsun,$
          logmp.label,logmp,$
          mpearth.label,mpearth,$
@@ -2220,7 +2221,7 @@ planet = create_struct($
          eclipsedepth50.label,eclipsedepth50,$
          eclipsedepth75.label,eclipsedepth75,$
          rhop.label,rhop,$      ;; less useful parameters            
-         rpsun.label,rpsun,$
+;         rpsun.label,rpsun,$ ;; commented out by DJS 2025-06-22
          logP.label,logp,$  
          loggp.label,loggp,$
          lambda.label,lambda,$
@@ -2679,10 +2680,11 @@ for i=0, nplanets-1 do begin
       ss.planet[i].mpsun.fit = 0
    endif
    if fitrp[i] then begin
-      ss.planet[i].rpsun.fit = 1
-	  ss.planet[i].rpsun.derive = 0 
+      ss.planet[i].rpsun.fit = 1B
+	  ss.planet[i].rpsun.derive=1B
+;	  ss.planet[i].rpsun.derive = 1 
 	  ss.planet[i].p.fit = 0
-      if fittran[i] then ss.planet[i].p.derive = 1
+      ss.planet[i].p.derive = 1
    endif
 endfor
 
@@ -2728,13 +2730,13 @@ for i=0, nband-1 do begin
 
    match = where(derivethermal eq ss.band[i].name)
    if match[0] ne -1 then begin
-      ss.band[i].thermal.fit = 1B
+      ss.band[i].thermal.fit = 0B
 	  ss.band[i].thermal.derive = 1B
       ss.band[i].eclipsedepth.derive = 1B
-	  if (where(fitthermal eq ss.band[i].name)) ne -1 then begin
-         printandlog, "[MKSS] ERROR: Do not set both FITTHERMAL and DERIVETHERMAL for the same band!"
-		 return, -1
-      endif
+	  ;if (where(fitthermal eq ss.band[i].name)) ne -1 then begin
+      ;   printandlog, "[MKSS] ERROR: Do not set both FITTHERMAL and DERIVETHERMAL for the same band!"
+	;	 return, -1
+     ; endif
       if ~keyword_set(silent) then printandlog, "Deriving thermal emission from SEDs for " + ss.band[i].name + " band."+ string(10B), logname; + $
 		  ;  "(see chi2v2.pro, multised.pro, derivepars.pro, and getmcmcscale.pro for modifications to undo otherwise).",logname
    endif
@@ -2946,15 +2948,17 @@ if file_test(mistsedfile) or file_test(sedfile) or file_test(fluxfile) then begi
                                  replicate(0d0,nstars), replicate(10d0,nstars), replicate(1d0,nstars), $
                                  replicate(1d0,nstars), sedfile, /redo, specphotpath=specphotpath,$
                                  blend0=blend,rstar=replicate(1d0,nstars),$
-                                 sperrscale=ss.specphot.sperrscale.value[0],spzeropoint=ss.specphot.spzeropoint.value[0], derivethermal=derivethermal, dbstarndx=ss.dilutestarndx, dbbandnames=ss.band[*ss.dilutebandndx].name)
+								 sperrscale=ss.specphot.sperrscale.value[0], $
+								 spzeropoint=ss.specphot.spzeropoint.value[0], derivethermal=derivethermal, $
+								 dbstarndx=ss.dilutestarndx, dbbandnames=ss.band[*ss.dilutebandndx].name)
       sedchi2 = sed_struct.sedchi2
 
       for i=0, n_elements(sed_struct.sedthermal)-1 do begin
          if finite(sed_struct.sedthermal[i]) then begin
             thermndx = where(ss.band[ss.transit[*].bandndx].label eq derivethermal[i])
-            ;ss.band[ss.transit[thermndx].bandndx].thermal.value = sed_struct.sedthermal[i]
-            thermalchi2 = ((ss.band[ss.transit[thermndx].bandndx].thermal.value - sed_struct.sedthermal[i])/(sed_struct.sedthermal[i]*0.05d0))^2   
-			sedchi2 += thermalchi2
+            ss.band[ss.transit[thermndx].bandndx].thermal.value = sed_struct.sedthermal[i]
+            ;thermalchi2 = ((ss.band[ss.transit[thermndx].bandndx].thermal.value - sed_struct.sedthermal[i])/(sed_struct.sedthermal[i]*0.05d0))^2   
+			;sedchi2 += thermalchi2
          endif
       endfor
 	  
