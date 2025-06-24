@@ -1361,8 +1361,35 @@ for j=0L, ss.ntran-1 do begin
 
    for i=0, ss.nplanets-1 do begin
       if ss.planet[i].fittran then begin
-
-         tmpmodelflux = (exofast_tran(transitbjd, $
+         if ss.fitrp then tmpmodelflux = (exofast_tran(transitbjd, $
+                                    ss.planet[i].i.value + ss.transit[j].tiv.value, $
+                                    ss.planet[i].ar.value, $
+                                    ss.planet[i].tp.value + ss.transit[j].ttv.value, $
+                                    ss.planet[i].period.value, $
+                                    ss.planet[i].e.value,$
+                                    ss.planet[i].omega.value,$
+                                    (ss.planet[i].rpsun.value/ss.star[ss.planet[i].starndx].rstar.value) + $
+                                                                         ss.transit[j].tdeltav.value,$
+                                    band.u1.value, $
+                                    band.u2.value, $
+                                    1d0, $
+                                    q=ss.star[ss.planet[i].starndx].mstar.value/ss.planet[i].mpsun.value, $
+                                    thermal=band.thermal.value, $
+                                    reflect=band.reflect.value, $
+                                    phaseshift=band.phaseshift.value, $
+                                    ellipsoidal=band.ellipsoidal.value, $
+;                                    beam=band.beam.value, $
+                                    beam=ss.planet[i].beam.value,$
+;                                    dilute=band.dilute.value,$
+                                    dilute=ss.transit[j].dilute.value,$
+                                    tc=ss.planet[i].tc.value,$
+                                    rstar=ss.star[ss.planet[i].starndx].rstar.value/AU,$
+                                    ;x1=x1,y1=y1,z1=z1,$
+                                    au=au,$
+                                    c=ss.constants.c/ss.constants.au*ss.constants.day,$
+									u_sec=[band.u1s.value, band.u2s.value]) - 1d0) $
+									
+         else tmpmodelflux = (exofast_tran(transitbjd, $
                                     ss.planet[i].i.value + ss.transit[j].tiv.value, $
                                     ss.planet[i].ar.value, $
                                     ss.planet[i].tp.value + ss.transit[j].ttv.value, $

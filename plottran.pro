@@ -208,7 +208,8 @@ for j=0, ss.ntran-1 do begin
    for i=0, ss.nplanets-1 do begin
 
       if ~ss.planet[i].fittran then continue
-
+      if ss.fitrp then p_tmp = ss.planet[i].rpsun.value[ndx]/ss.star[ss.planet[i].starndx].rstar.value[ndx] $ 
+      else p_tmp = ss.planet[i].p.value[ndx]
       ;; calculate the model for this planet at a high, regular cadence
       prettytmpflux = (exofast_tran(prettytime, $
                                     ss.planet[i].i.value[ndx] + ss.transit[j].tiv.value[ndx], $
@@ -217,7 +218,7 @@ for j=0, ss.ntran-1 do begin
                                     ss.planet[i].period.value[ndx], $
                                     ss.planet[i].e.value[ndx],$
                                     ss.planet[i].omega.value[ndx],$
-                                    ss.planet[i].p.value[ndx] + ss.transit[j].tdeltav.value[ndx],$
+                                    p_tmp + ss.transit[j].tdeltav.value[ndx],$
                                     band.u1.value[ndx], $
                                     band.u2.value[ndx], $
                                     1d0, $
@@ -244,7 +245,7 @@ for j=0, ss.ntran-1 do begin
                               ss.planet[i].period.value[ndx], $
                               ss.planet[i].e.value[ndx],$
                               ss.planet[i].omega.value[ndx],$
-                              ss.planet[i].p.value[ndx] + ss.transit[j].tdeltav.value[ndx],$
+                              p_tmp + ss.transit[j].tdeltav.value[ndx],$
                               band.u1.value[ndx], $
                               band.u2.value[ndx], $
                               1d0, $
@@ -400,7 +401,8 @@ for jj=0L, 1 do begin
             prettytime = t_eclipse[i] - duration[i] + (2d0*duration[i])*dindgen(npretty)/(npretty-1d0)
             prettyflux = dblarr(npretty) + 1d0
          endelse
-         
+         if ss.fitrp then p_tmp = ss.planet[i].rpsun.value[ndx]/ss.star[ss.planet[i].starndx].rstar.value[ndx] $ 
+         else p_tmp = ss.planet[i].p.value[ndx]         
          ;; calculate the model for this planet at a high, regular cadence
          prettytmpflux = (exofast_tran(prettytime, $
                                        ss.planet[i].i.value[ndx] + ss.transit[j].tiv.value[ndx], $
@@ -409,10 +411,10 @@ for jj=0L, 1 do begin
                                        ss.planet[i].period.value[ndx], $
                                        ss.planet[i].e.value[ndx],$
                                        ss.planet[i].omega.value[ndx],$
-                                       ss.planet[i].p.value[ndx] + ss.transit[j].tdeltav.value[ndx],$
+                                       p_tmp + ss.transit[j].tdeltav.value[ndx],$
                                        band.u1.value[ndx], $
                                        band.u2.value[ndx], $
-                                       1d0, $
+                                       ss.transit[j].f0.value[ndx], $
                                        q=ss.star[ss.planet[i].starndx].mstar.value[ndx]/ss.planet[i].mpsun.value[ndx], $
                                        thermal=band.thermal.value[ndx], $
                                        reflect=band.reflect.value[ndx], $
@@ -435,7 +437,7 @@ for jj=0L, 1 do begin
                                  ss.planet[i].period.value[ndx], $
                                  ss.planet[i].e.value[ndx],$
                                  ss.planet[i].omega.value[ndx],$
-                                 ss.planet[i].p.value[ndx] + ss.transit[j].tdeltav.value[ndx],$
+                                 p_tmp + ss.transit[j].tdeltav.value[ndx],$
                                  band.u1.value[ndx], $
                                  band.u2.value[ndx], $
                                  1d0, $

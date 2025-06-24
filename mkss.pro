@@ -2681,8 +2681,8 @@ for i=0, nplanets-1 do begin
    endif
    if fitrp[i] then begin
       ss.planet[i].rpsun.fit = 1B
-	  ss.planet[i].rpsun.derive=1B
-;	  ss.planet[i].rpsun.derive = 1 
+	  ss.planet[i].rpsun.derive= 1B
+	  ss.planet[i].rpsun.derive = 1 
 	  ss.planet[i].p.fit = 0
       ss.planet[i].p.derive = 1
    endif
