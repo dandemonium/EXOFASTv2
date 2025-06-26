@@ -478,7 +478,7 @@ if where(ss.derivethermal eq '') eq -1 then begin
                                     ss.star[*].errscale.value[i], $
                                     ss.sedfile, rstar=ss.star[*].rstarsed.value[i],$
                                     debug=ss.debug,$
-                                    range=ss.sedrange,derivethermal=ss.derivethermal)
+                                    range=ss.sedrange,derivethermal=ss.derivethermal) ;; DJS: no need to include deblending parameters, I think
 	  endif else begin
          sed_struct = exofast_multised(teffsed, ss.star[*].logg.value[i], fehsed, $
                                     ss.star[*].av.value[i], $

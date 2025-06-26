@@ -71,7 +71,7 @@ for i=0, ss.nplanets-1 do begin
    ss.planet[i].mpearth.value = ss.planet[i].mpsun.value/mearth ;; m_earth
 
    ;; derive the radius of the planet  
-   if ss.planet[i].rpsun.fit then ss.planet[i].p.value = ss.star[ss.planet[i].starndx].rstar.value $ ;; r_sun
+   if ss.planet[i].rpsun.fit then ss.planet[i].p.value = ss.planet[i].rpsun.value/ss.star[ss.planet[i].starndx].rstar.value $ ;; r_sun
    else ss.planet[i].rpsun.value = ss.planet[i].p.value*ss.star[ss.planet[i].starndx].rstar.value ;; r_sun
    ss.planet[i].rp.value = ss.planet[i].rpsun.value/rjup ;; r_jupiter
    ss.planet[i].rpearth.value = ss.planet[i].rpsun.value/rearth ;; r_earth
