@@ -414,7 +414,7 @@ for jj=0L, 1 do begin
                                        p_tmp + ss.transit[j].tdeltav.value[ndx],$
                                        band.u1.value[ndx], $
                                        band.u2.value[ndx], $
-                                       ss.transit[j].f0.value[ndx], $
+                                       1d0, $;ss.transit[j].f0.value[ndx], $
                                        q=ss.star[ss.planet[i].starndx].mstar.value[ndx]/ss.planet[i].mpsun.value[ndx], $
                                        thermal=band.thermal.value[ndx], $
                                        reflect=band.reflect.value[ndx], $
