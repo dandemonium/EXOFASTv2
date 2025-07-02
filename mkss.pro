@@ -333,7 +333,7 @@ endif else begin
    ntran = 0
    tranpath = ''
 endelse
-if ~keyword_set(limbdarksecondary) then limbdarksecondary=strarr(ntran)
+if ~keyword_set(limbdarksecondary) and ntran>0 then limbdarksecondary=strarr(ntran) else limbdarksecondary=''
 
 if n_elements(noclaret) eq 1 then begin
    noclaret = bytarr(ntran>1) + keyword_set(noclaret)
