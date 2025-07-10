@@ -46,7 +46,7 @@ common BC_block2, bcarrays, teffgrid, logggrid, fehgrid, avgrid, filterprops
 
 if n_elements(teffgrid) eq 0 or keyword_set(redo) then begin
  
-   readcol, filepath('filternames.txt', root_dir=getenv('EXOFAST_PATH'),subdir=['sed','mist']), keivanname, mistname, claretname, format='a,a,a', comment='#',/silent
+   readcol, filepath('filternames2.txt', root_dir=getenv('EXOFAST_PATH'),subdir=['sed','mist']), keivanname, mistname, claretname, svoname, format='a,a,a, a', comment='#',/silent
    
    ;; this is the dimension for each axis of the array
    restore, filepath('mist.sed.grid.idl', root_dir=getenv('EXOFAST_PATH'),subdir=['sed','mist'])
