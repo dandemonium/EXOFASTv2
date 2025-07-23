@@ -1114,8 +1114,8 @@ for j=0, ss.ntel-1 do begin
             
                ;; calculate the RV model
 ;               modelrv += exofast_rv(rvbjd,ss.planet[i].tp.value,ss.planet[i].period.value,$
-                                     0d0,Ktwo,  ss.planet[i].e.value,ss.planet[i].omega.value+!dpi,$
-                                     slope=0d0)
+;                                     0d0,Ktwo,  ss.planet[i].e.value,ss.planet[i].omega.value+!dpi,$
+;                                     slope=0d0)
 ;            endif else begin
                rvbjd = bjd2target(rv.bjd, inclination=ss.planet[i].i.value, $
                                   a=ss.planet[i].a.value, tp=ss.planet[i].tp.value, $
