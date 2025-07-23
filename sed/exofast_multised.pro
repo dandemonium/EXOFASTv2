@@ -573,6 +573,7 @@ if keyword_set(debug) or keyword_set(psname) eq 1 then begin
                         comment='# Filtername, Center wavelength (um), half bandpass (um), obs. lamflam (cgs), '+ $ 
 						'obs. err (cgs), model lamflam (cgs), O-C lamflam (cgs), star index', $
                         format='(a,x,f0.6,x,f0.6,x,e0.6,x,e0.6,x,e0.6,x,e0.6,x,a)'
+						
 	  for k=0, nspecfiles-1 do begin ;; print spectrophotometry model
          exofast_forprint, (*spectrophotometry[k])[*,0], (*specphotflux[k]), textout=residualfilename+'.sed.model.specphot_'+strtrim(k,2)+'.txt'
       endfor
