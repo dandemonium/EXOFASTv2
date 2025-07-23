@@ -208,7 +208,7 @@ for j=0, ss.ntran-1 do begin
    for i=0, ss.nplanets-1 do begin
 
       if ~ss.planet[i].fittran then continue
-      if ss.fitrp then p_tmp = ss.planet[i].rpsun.value[ndx]/ss.star[ss.planet[i].starndx].rstar.value[ndx] $ 
+      if ss.fitrp[i] then p_tmp = ss.planet[i].rpsun.value[ndx]/ss.star[ss.planet[i].starndx].rstar.value[ndx] $ 
       else p_tmp = ss.planet[i].p.value[ndx]
       ;; calculate the model for this planet at a high, regular cadence
       prettytmpflux = (exofast_tran(prettytime, $
@@ -401,7 +401,7 @@ for jj=0L, 1 do begin
             prettytime = t_eclipse[i] - duration[i] + (2d0*duration[i])*dindgen(npretty)/(npretty-1d0)
             prettyflux = dblarr(npretty) + 1d0
          endelse
-         if ss.fitrp then p_tmp = ss.planet[i].rpsun.value[ndx]/ss.star[ss.planet[i].starndx].rstar.value[ndx] $ 
+         if ss.fitrp[i] then p_tmp = ss.planet[i].rpsun.value[ndx]/ss.star[ss.planet[i].starndx].rstar.value[ndx] $ 
          else p_tmp = ss.planet[i].p.value[ndx]         
          ;; calculate the model for this planet at a high, regular cadence
          prettytmpflux = (exofast_tran(prettytime, $

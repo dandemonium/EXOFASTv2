@@ -189,7 +189,7 @@ for i=0, ss.nplanets-1 do begin
    if rv.planet ne -1 then continue
 
    if rv.planet eq i then begin
-;; this needs to be debugged'
+   ;; this needs to be debugged'
       ;; pretty model without quad, slope, or gamma
       prettymodel2 = exofast_rv(prettytime,ss.planet[i].tp.value[ndx],$
                                 ss.planet[i].period.value[ndx],0d0,ss.planet[i].K.value[ndx]*q[i],$

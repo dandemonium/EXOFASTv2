@@ -1099,24 +1099,37 @@ for j=0, ss.ntel-1 do begin
          q = ss.star[ss.planet[i].starndx].mstar.value/ss.planet[i].mpsun.value
          if rv.planet eq i then begin
             ;; time in target barycentric frame (expensive)
-;; this needs to be debugged
-            if ss.telescope[j].label eq 'KPNO-Fairborn-sb2' then $
-			qcm=(total(ss.star[*].mstar.value) - ss.planet[i].mpsun.value)/ss.planet[i].mpsun.value $
-            else $
-            qcm = q
-
-            rvbjd = bjd2target(rv.bjd, inclination=ss.planet[i].i.value, $
-                               a=ss.planet[i].a.value, tp=ss.planet[i].tp.value, $
-                               period=ss.planet[i].period.value, e=ss.planet[i].e.value,$
-                               omega=ss.planet[i].omega.value+!dpi,$
-                               c=ss.constants.c/ss.constants.au*ss.constants.day,q=q)
+            ;; this needs to be debugged
+            if ss.telescope[j].label eq 'KPNO-Fairborn-sb2' and rv.planet eq 1 then begin
+	           mnum = ss.star[0].mstar.value+ss.star[1].mstar.value
+			   mrat = mnum/ss.star[0].mstar.value
+	           Ktwo = mtok2(mnum, ss.planet[i].e.value,$
+                            ss.planet[i].i.value, ss.planet[i].period.value, $
+                            mnum+ss.planet[i].mpsun.value, GMsun=ss.constants.GMsun/1d6) ;; m_sun)
+               rvbjd = bjd2target(rv.bjd, inclination=ss.planet[i].i.value, $
+                                  a=ss.planet[i].a.value*mrat, tp=ss.planet[i].tp.value, $
+                                  period=ss.planet[i].period.value, e=ss.planet[i].e.value,$
+                                  omega=ss.planet[i].omega.value+!dpi,$
+                                  c=ss.constants.c/ss.constants.au*ss.constants.day,q=q*mrat)
             
-            ;; calculate the RV model
-            modelrv += exofast_rv(rvbjd,ss.planet[i].tp.value,ss.planet[i].period.value,$
-                                  0d0,ss.planet[i].K.value*q,$
-                                  ss.planet[i].e.value,ss.planet[i].omega.value+!dpi,$
-                                  slope=0d0)
-         endif else begin
+               ;; calculate the RV model
+               modelrv += exofast_rv(rvbjd,ss.planet[i].tp.value,ss.planet[i].period.value,$
+                                     0d0,Ktwo,  ss.planet[i].e.value,ss.planet[i].omega.value+!dpi,$
+                                     slope=0d0)
+            endif else begin
+               rvbjd = bjd2target(rv.bjd, inclination=ss.planet[i].i.value, $
+                                  a=ss.planet[i].a.value, tp=ss.planet[i].tp.value, $
+                                  period=ss.planet[i].period.value, e=ss.planet[i].e.value,$
+                                  omega=ss.planet[i].omega.value+!dpi,$
+                                  c=ss.constants.c/ss.constants.au*ss.constants.day,q=q)
+            
+               ;; calculate the RV model
+               modelrv += exofast_rv(rvbjd,ss.planet[i].tp.value,ss.planet[i].period.value,$
+                                     0d0,ss.planet[i].K.value*q, $
+                                     ss.planet[i].e.value,ss.planet[i].omega.value+!dpi,$
+                                     slope=0d0)
+            endelse
+		 endif else begin
             ;; time in target barycentric frame (expensive)
             rvbjd = bjd2target(rv.bjd, inclination=ss.planet[i].i.value, $
                                a=ss.planet[i].a.value, tp=ss.planet[i].tp.value, $
@@ -1361,7 +1374,7 @@ for j=0L, ss.ntran-1 do begin
 
    for i=0, ss.nplanets-1 do begin
       if ss.planet[i].fittran then begin
-         if ss.fitrp then tmpmodelflux = (exofast_tran(transitbjd, $
+         if ss.fitrp[i] then tmpmodelflux = (exofast_tran(transitbjd, $
                                     ss.planet[i].i.value + ss.transit[j].tiv.value, $
                                     ss.planet[i].ar.value, $
                                     ss.planet[i].tp.value + ss.transit[j].ttv.value, $

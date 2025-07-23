@@ -333,7 +333,8 @@ endif else begin
    ntran = 0
    tranpath = ''
 endelse
-if ~keyword_set(limbdarksecondary) and ntran>0 then limbdarksecondary=strarr(ntran) else limbdarksecondary=''
+if ~keyword_set(limbdarksecondary) and ntran gt 0 then limbdarksecondary=strarr(ntran) else $
+   if ~keyword_set(limbdarksecondary) and ntran eq 0 then limbdarksecondary=''
 
 if n_elements(noclaret) eq 1 then begin
    noclaret = bytarr(ntran>1) + keyword_set(noclaret)
@@ -1917,6 +1918,7 @@ u1s.description = 'Linear limb-darkening coeff for secondary'
 u1s.latex = 'u_{1,S}'
 u1s.label = 'u1s'
 u1s.scale = 0.15d0
+;u1s.value = 0
 u1s.fit = 0
 u1s.derive = 0
 ;else u1s.fit  1
@@ -1926,6 +1928,7 @@ u2s.description = 'Quadratic limb-darkening coeff for secondary'
 u2s.latex = 'u_{2,S}'
 u2s.label = 'u2s'
 u2s.scale = 0.15d0
+;u2s.value = 0
 u2s.fit = 0
 u2s.derive = 0
 
@@ -2894,23 +2897,25 @@ if ntran gt 0 then begin
             ss.transit[i].tdeltav.derive = 1B
          endif
       endfor
-	  ss.transit[i].limbdarksecondary = keyword_set(limbdarksecondary[i])
-      if ss.transit[i].limbdarksecondary then begin
+	  ss.transit[i].limbdarksecondary = limbdarksecondary[i]
+      if ss.transit[i].limbdarksecondary ne 0 then begin
          ss.band[ss.transit[i].bandndx].u1s.fit = 1B
 		 ss.band[ss.transit[i].bandndx].u2s.fit = 1B
          ldsecstarndx = ss.planet[ss.band[ss.transit[i].bandndx].starndx].linkstarndx
-         ldcoeffs_sec = quadld(ss.star[ldsecstarndx].logg.value, ss.star[ldsecstarndx].teff.value, ss.star[ldsecstarndx].feh.value, bands[i])
-         if finite(ldcoeffs_sec[0]) then ss.band[i].u1s.value = ldcoeffs_sec[0] $
+         ldcoeffs_sec = quadld(ss.star[ldsecstarndx].logg.value, ss.star[ldsecstarndx].teff.value, ss.star[ldsecstarndx].feh.value, ss.band[ss.transit[i].bandndx].name)
+         if finite(ldcoeffs_sec[0]) then ss.band[ss.transit[i].bandndx].u1s.value = ldcoeffs_sec[0] $
          else ss.band[i].u1s.value = 0d0
-         if finite(ldcoeffs_sec[1]) then ss.band[i].u2s.value = ldcoeffs_sec[1] $
+         if finite(ldcoeffs_sec[1]) then ss.band[ss.transit[i].bandndx].u2s.value = ldcoeffs_sec[1] $
          else ss.band[i].u2s.value = 0d0
-         if ~keyword_set(silent) then begin
-            printandlog, "[MKSS] Fitting limb-darkened secondary eclipses for the following light curves:" + string(10B), logname
-            for j=0, n_elements(match)-1 do printandlog, string(j,tranfiles[j],format='(i2,x,a)'),logname
-            ;printandlog, "[MKSS]: WARNING!: Assuming planet 0 is linked to star 1 for limb-darkened secondary eclipses.", logname
-         endif
-      endif
+       endif
    endfor
+   if ~keyword_set(silent) and (where(ss.transit[*].limbdarksecondary eq 1) ne -1) then begin
+      printandlog, "[MKSS] Fitting limb-darkened secondary eclipses for the following light curves:" + $
+	               string(10B), logname
+      for k=0, n_elements(ss.transit[*].bandndx)-1 do begin
+	     if ss.transit[k].limbdarksecondary eq 1 then printandlog, string(k,tranfiles[k],format='(i2,x,a)'),logname
+      endfor
+   endif
 
    if n_elements(dilutebandndx) gt 1 then begin
       dilutebandndx = dilutebandndx[1:*]
