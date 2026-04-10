@@ -337,13 +337,17 @@ if keyword_set(debug) or keyword_set(epsname) or n_elements(pngname) ne 0 then b
    mistteffiso = mistteffiso[good]
    mistageiso = mistageiso[good]
 
-   if n_elements(trackfile) ne 0 then $
-      exofast_forprint, mistteffiso, mistrstariso, mistageiso, format='(f0.5,x,f0.5,x,f0.5)', comment='#teff, rstar, age', textout=trackfile
+;   if n_elements(trackfile) ne 0 then $
+;      exofast_forprint, mistteffiso, mistrstariso, mistageiso, format='(f0.5,x,f0.5,x,f0.5)', comment='#teff, rstar, age', textout=trackfile + '.track.txt'
 
-   ;; make a publication-ready plot of the YY track -- Teff vs logg
+   ;; make a publication-ready plot of the MIST track -- Teff vs logg
    loggplottrack =  alog10(mstar/(mistrstariso^2)*gravitysun)
    teffplottrack = mistteffiso
    loggplot =  alog10(mstar/(rstar^2)*gravitysun)
+
+   ;; added by DJS 2026-04-09 for making custom MIST track plots
+   if n_elements(trackfile) ne 0 then $
+      exofast_forprint, mistteffiso, mistrstariso, mistageiso, loggplottrack, eepplot, format='(f0.5,x,f0.5,x,f0.12,x,f0.5,x,I3)', comment='#teff, rstar, age, logg, eep', textout=trackfile+'.track.txt'
 
    if (eep + 3) gt max(eepplot) then mineep = 1 $
    else mineep = 202
@@ -379,8 +383,13 @@ if keyword_set(debug) or keyword_set(epsname) or n_elements(pngname) ne 0 then b
    plotsym,0,/fill
    oplot, [teff], [loggplot], psym=8,symsize=symsize,color=black ;; the input point
    junk = min(abs(eepplot-eep),ndx)
-   oplot, [teffplottrack[ndx]],[loggplottrack[ndx]], psym=2, symsize=symsize*2, color=red ;; the track point 
-
+   
+   ;; added by DJS 2026-04-09 for making custom MIST track plots   
+   if n_elements(trackfile) ne 0 then begin
+      exofast_forprint,mstar, teffplottrack[ndx],loggplottrack[ndx], eepplot[ndx], mistageiso[ndx], teff, loggplot, eep, age, format='(f0.5,x,f0.5,x,f0.5,x,f0.5,x,f0.5,x,f0.5,x,f0.5,x,f0.5,x,f0.5)', comment='#Mstar, Teff_MIST, logg_MIST, eep_MIST, age_MIST, teff_best, logg_best, eep_best, age_best', textout=trackfile+'.nearest_vs_best.txt'
+      
+      oplot, [teffplottrack[ndx]],[loggplottrack[ndx]], psym=2, symsize=symsize*2, color=red ;; the track point 
+   endif
    if keyword_set(epsname) then begin
       !p.font=-1
       !p.multi=0
