@@ -178,7 +178,7 @@ endif
 if ellipsoidal ne 0d0 then begin
   if e eq 0 then begin  ;;; commented out June 6, 2023;
     if n_elements(tc) eq 0 and n_elements(tc0) eq 0 then begin
-      phase = exofast_getphase(e,omega,/primary)
+      phase = exofast_getphase(e,omega,/primary)  
       tc0 = tp - phase*period
     endif else tc0 = tc
     modelflux -= ellipsoidal*1d-6*cos(2d0*!dpi*(transitbjd-tc)/(period/2d0))

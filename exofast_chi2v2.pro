@@ -779,8 +779,10 @@ for i=0L, ss.nstars-1 do begin
    
    ;; apply MIST penalty to constrain stellar parameters
    if ss.mist[i] then begin
-      if keyword_set(psname) then epsname = psname + '.mist.' + string(i,format='(i03)') + '.eps'
-
+      if keyword_set(psname) then begin
+         epsname = psname + '.mist.' + string(i,format='(i03)') + '.eps'
+         trackfile = psname + '.mist.' + string(i,format='(i03)')
+      endif
       mistchi2 = massradius_mist(ss.star[i].eep.value, $
                                  ss.star[i].mstar.value,$
                                  ss.star[i].initfeh.value, $
@@ -798,7 +800,7 @@ for i=0L, ss.nstars-1 do begin
                                  fehfloor=ss.fehemfloor, $
                                  rstarfloor=ss.rstaremfloor, $
                                  agefloor=ss.ageemfloor, pngname=pngname,$
-                                 range=ss.emrange)
+                                 range=ss.emrange, trackfile=trackfile)
 
       ;; if there's more than one star with the same age and initfeh,
       ;; make an isochrone with all of them on it
