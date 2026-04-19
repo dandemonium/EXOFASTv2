@@ -100,7 +100,7 @@ Unsupported Gaia_G_MAW Unsupported Unsupported
 Unsupported Gaia_RP_MAW Unsupported Unsupported
 Unsupported H158 Unsupported Unsupported
 Unsupported Hipparcos_Hp Unsupported Unsupported
-Unsupported IRAC_3.6 Spit36 Unsupported
+Unsupported IRAC_3.6 Spit36 Spitzer_IRAC.I1
 Unsupported IRAC_4.5 Spit45 Unsupported
 Unsupported IRAC_5.8 Spit58 Unsupported
 Unsupported IRAC_8.0 Spit80 Unsupported

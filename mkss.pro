@@ -2909,7 +2909,8 @@ if ntran gt 0 then begin
          else ss.band[i].u2s.value = 0d0
        endif
    endfor
-   if ~keyword_set(silent) and (where(ss.transit[*].limbdarksecondary eq 1) ne -1) then begin
+
+   if ~keyword_set(silent) and (total(where(ss.transit[*].limbdarksecondary eq 1)) ge 0) then begin
       printandlog, "[MKSS] Fitting limb-darkened secondary eclipses for the following light curves:" + $
 	               string(10B), logname
       for k=0, n_elements(ss.transit[*].bandndx)-1 do begin

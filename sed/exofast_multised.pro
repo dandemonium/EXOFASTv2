@@ -82,12 +82,12 @@ endif else if n_elements(spzeropoint) eq 0 then begin
    spzeropoint = dblarr(nspecfiles>1)
 endif else if n_elements(spzeropoint) eq 1 then begin
    spzeropoint = dblarr(nspecfiles>1) + spzeropoint
-endif else begin
-   print, "SPZEROPOINT must be a 1 or NSPECFILES element array"
+endif else if nspecfiles ne 0 then begin
+   print, "SPZEROPOINT has " + strtrim(n_elements(spzeropoint),2) + " elements, but it must be a 1 or NSPECFILES (" + strtrim(nspecfiles,2) + ")-element array."
    sed_struct.sedchi2 = !values.d_infinity
    return, sed_struct ; edited by DJS
-endelse
-
+;endelse
+endif
 
 sed = dblarr(nstars,nwaves)
 for j=0L, nstars-1 do begin
@@ -580,7 +580,7 @@ if keyword_set(debug) or keyword_set(psname) eq 1 then begin
 	  
    endif
    set_plot, mydevice
-   cgPS2PDF, psname, unix_convert_cmd='ps2pdf -dPDFsettings=/printer -dEPSCrop', /showcmd
+   cgPS2PDF, psname, unix_convert_cmd='ps2pdf -dPDFsettings=/printer -dEPSCrop -dOptimize=true';, /showcmd
 end
 
 ;sedarr = [sedchi2, thermal, lcblendflux] ;, blendflux]

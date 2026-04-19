@@ -472,23 +472,26 @@ if where(ss.derivethermal eq '') eq -1 then begin
       teffsed = ss.star[*].teffsed.value[i]
       lstarsed = 4d0*!dpi*ss.star[*].rstarsed.value[i]^2*teffsed^4*ss.constants.sigmab/ss.constants.lsun*ss.constants.rsun^2 ;; lsun
       if where(ss.specphotpath eq '') ne -1 then begin
-      sed_struct = exofast_multised(teffsed, ss.star[*].logg.value[i], fehsed, $
-                                    ss.star[*].av.value[i], $
-                                    ss.star[*].distance.value[i], lstarsed, $
-                                    ss.star[*].errscale.value[i], $
-                                    ss.sedfile, rstar=ss.star[*].rstarsed.value[i],$
-                                    debug=ss.debug,$
-                                    range=ss.sedrange,derivethermal=ss.derivethermal) ;; DJS: no need to include deblending parameters, I think
-	  endif else begin
          sed_struct = exofast_multised(teffsed, ss.star[*].logg.value[i], fehsed, $
+                                       ss.star[*].av.value[i], $
+                                       ss.star[*].distance.value[i], lstarsed, $
+                                       ss.star[*].errscale.value[i], $
+                                       ss.sedfile, rstar=ss.star[*].rstarsed.value[i],$
+                                       debug=ss.debug, psname=epsname, range=ss.sedrange,$
+                                       derivethermal=ss.derivethermal, $
+                                       dbstarndx=ss.dilutestarndx, $
+                                       dbbandnames=ss.band[*ss.dilutebandndx].name)
+         endif else begin
+            sed_struct = exofast_multised(teffsed, ss.star[*].logg.value[i], fehsed, $
                                     ss.star[*].av.value[i], $
                                     ss.star[*].distance.value[i], lstarsed, $
                                     ss.star[*].errscale.value[i], $
                                     ss.sedfile, rstar=ss.star[*].rstarsed.value[i],$
                                     debug=ss.debug, psname=epsname,$
-                                    range=ss.sedrange,specphotpath=ss.specphotpath, $
-                                    sperrscale=ss.specphot.sperrscale.value,$
-                                    spzeropoint=ss.specphot.spzeropoint.value, derivethermal=ss.derivethermal, $
+                                    range=ss.sedrange, specphotpath=ss.specphotpath, $
+                                    sperrscale=ss.specphot.sperrscale.value[i],$
+                                    spzeropoint=ss.specphot.spzeropoint.value[i],$
+                                    derivethermal=ss.derivethermal, $
                                     dbstarndx=ss.dilutestarndx, dbbandnames=ss.band[*ss.dilutebandndx].name)
       endelse
 	  for j=0, n_elements(sed_struct.sedthermal)-1 do begin
