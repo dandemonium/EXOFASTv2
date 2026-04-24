@@ -467,6 +467,23 @@ endelse
 endfor
 
 if where(ss.derivethermal eq '') eq -1 then begin
+   printandlog, "DERIVETHERMAL set; re-computing A_T ('thermal emission') from SEDs for posteriors.", logname
+   st0 = systime(/seconds)
+   sed_struct = exofast_multised(ss.star[*].teffsed.value[0], ss.star[*].logg.value[0], ss.star[*].feh.value[0], $
+                                 ss.star[*].av.value[0], $
+                                 ss.star[*].distance.value[0], $
+                                 4d0*!dpi*ss.star[*].rstarsed.value[0]^2*ss.star[*].teffsed.value[0]^4*ss.constants.sigmab/ss.constants.lsun*ss.constants.rsun^2, $
+                                 ss.star[*].errscale.value[0], $
+                                 ss.sedfile, rstar=ss.star[*].rstarsed.value[0],$
+;                                 debug=ss.debug, psname=epsname, range=ss.sedrange,$
+                                 sperrscale=ss.specphot.sperrscale.value[0], $
+                                 spzeropoint=ss.specphot.spzeropoint.value[0], $
+                                 derivethermal=ss.derivethermal);, $
+;                                 dbstarndx=ss.dilutestarndx, $
+;                                 dbbandnames=ss.band[*ss.dilutebandndx].name)
+   sedtime = systime(/seconds) - st0
+   printandlog, 'It takes ' + strtrim(sedtime,2) + ' seconds to calculate a single SED model.', logname
+   printandlog, 'This may take up to ' + string(sedtime*n_elements(ss.star[0].teffsed.value)/60d0,format='(f0.1)') + ' minutes.' , logname
    for i=0, n_elements(ss.star[0].teffsed.value)-1 do begin
       fehsed = ss.star[*].feh.value[i]
       teffsed = ss.star[*].teffsed.value[i]
@@ -487,8 +504,8 @@ if where(ss.derivethermal eq '') eq -1 then begin
                                     ss.star[*].distance.value[i], lstarsed, $
                                     ss.star[*].errscale.value[i], $
                                     ss.sedfile, rstar=ss.star[*].rstarsed.value[i],$
-                                    debug=ss.debug, psname=epsname,$
-                                    range=ss.sedrange, specphotpath=ss.specphotpath, $
+;                                    debug=ss.debug, psname=epsname, range=ss.sedrange, $
+                                    specphotpath=ss.specphotpath, $
                                     sperrscale=ss.specphot.sperrscale.value[i],$
                                     spzeropoint=ss.specphot.spzeropoint.value[i],$
                                     derivethermal=ss.derivethermal, $
@@ -501,6 +518,7 @@ if where(ss.derivethermal eq '') eq -1 then begin
          endif
       endfor
    endfor
+   printandlog, "DERIVETHERMAL calculations complete.", logname
 endif
 
 for i=0L, ss.nband-1 do begin  
