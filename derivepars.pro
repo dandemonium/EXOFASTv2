@@ -506,8 +506,8 @@ if where(ss.derivethermal eq '') eq -1 then begin
                                     ss.sedfile, rstar=ss.star[*].rstarsed.value[i],$
 ;                                    debug=ss.debug, psname=epsname, range=ss.sedrange, $
                                     specphotpath=ss.specphotpath, $
-                                    sperrscale=ss.specphot.sperrscale.value[i],$
-                                    spzeropoint=ss.specphot.spzeropoint.value[i],$
+                                    sperrscale=ss.specphot[*].sperrscale.value[i],$
+                                    spzeropoint=ss.specphot[*].spzeropoint.value[i],$
                                     derivethermal=ss.derivethermal, $
                                     dbstarndx=ss.dilutestarndx, dbbandnames=ss.band[*ss.dilutebandndx].name)
       endelse
@@ -521,7 +521,7 @@ if where(ss.derivethermal eq '') eq -1 then begin
    printandlog, "DERIVETHERMAL calculations complete.", logname
 endif
 
-for i=0L, ss.nband-1 do begin  
+for i=0L, ss.nband-1 do begin
    massfraction = ss.planet[0].mpsun.value/(ss.star[ss.planet[0].starndx].mstar.value + ss.planet[0].mpsun.value)
 ;   fluxfraction = ss.band[i].dilute.value
 ;   ss.band[i].phottobary.value = 1d0/(massfraction-fluxfraction)
