@@ -659,7 +659,7 @@ if keyword_set(psname) then begin
    device, /close
    set_plot, mydevice
    exofast_fixps, psname
-   cgPS2PDF, psname, unix_convert_cmd='ps2pdf -dPDFsettings=/printer', /showcmd
+   cgPS2PDF, psname, unix_convert_cmd='ps2pdf -dPDFsettings=/printer -dOptimize=true';, /showcmd
 endif
 
 end

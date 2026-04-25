@@ -405,8 +405,7 @@ if keyword_set(debug) or keyword_set(epsname) or n_elements(pngname) ne 0 then b
       !p.multi=0
    endif    
    set_plot, mydevice
-   cgPS2PDF, epsname, unix_convert_cmd='ps2pdf -dPDFsettings=/printer -dEPSCrop', /showcmd
-
+   cgPS2PDF, epsname, unix_convert_cmd='ps2pdf -dPDFsettings=/printer -dEPSCrop -dOptimize=true';, /showcmd
 endif
 
 return, chi2

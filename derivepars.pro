@@ -467,28 +467,48 @@ endelse
 endfor
 
 if where(ss.derivethermal eq '') eq -1 then begin
+   printandlog, "DERIVETHERMAL set; re-computing A_T ('thermal emission') from SEDs for posteriors.", logname
+   st0 = systime(/seconds)
+   sed_struct = exofast_multised(ss.star[*].teffsed.value[0], ss.star[*].logg.value[0], ss.star[*].feh.value[0], $
+                                 ss.star[*].av.value[0], $
+                                 ss.star[*].distance.value[0], $
+                                 4d0*!dpi*ss.star[*].rstarsed.value[0]^2*ss.star[*].teffsed.value[0]^4*ss.constants.sigmab/ss.constants.lsun*ss.constants.rsun^2, $
+                                 ss.star[*].errscale.value[0], $
+                                 ss.sedfile, rstar=ss.star[*].rstarsed.value[0],$
+;                                 debug=ss.debug, psname=epsname, range=ss.sedrange,$
+                                 sperrscale=ss.specphot.sperrscale.value[0], $
+                                 spzeropoint=ss.specphot.spzeropoint.value[0], $
+                                 derivethermal=ss.derivethermal);, $
+;                                 dbstarndx=ss.dilutestarndx, $
+;                                 dbbandnames=ss.band[*ss.dilutebandndx].name)
+   sedtime = systime(/seconds) - st0
+   printandlog, 'It takes ' + strtrim(sedtime,2) + ' seconds to calculate a single SED model.', logname
+   printandlog, 'This may take up to ' + string(sedtime*n_elements(ss.star[0].teffsed.value)/60d0,format='(f0.1)') + ' minutes.' , logname
    for i=0, n_elements(ss.star[0].teffsed.value)-1 do begin
       fehsed = ss.star[*].feh.value[i]
       teffsed = ss.star[*].teffsed.value[i]
       lstarsed = 4d0*!dpi*ss.star[*].rstarsed.value[i]^2*teffsed^4*ss.constants.sigmab/ss.constants.lsun*ss.constants.rsun^2 ;; lsun
       if where(ss.specphotpath eq '') ne -1 then begin
-      sed_struct = exofast_multised(teffsed, ss.star[*].logg.value[i], fehsed, $
-                                    ss.star[*].av.value[i], $
-                                    ss.star[*].distance.value[i], lstarsed, $
-                                    ss.star[*].errscale.value[i], $
-                                    ss.sedfile, rstar=ss.star[*].rstarsed.value[i],$
-                                    debug=ss.debug,$
-                                    range=ss.sedrange,derivethermal=ss.derivethermal) ;; DJS: no need to include deblending parameters, I think
-	  endif else begin
          sed_struct = exofast_multised(teffsed, ss.star[*].logg.value[i], fehsed, $
+                                       ss.star[*].av.value[i], $
+                                       ss.star[*].distance.value[i], lstarsed, $
+                                       ss.star[*].errscale.value[i], $
+                                       ss.sedfile, rstar=ss.star[*].rstarsed.value[i],$
+                                       debug=ss.debug, psname=epsname, range=ss.sedrange,$
+                                       derivethermal=ss.derivethermal, $
+                                       dbstarndx=ss.dilutestarndx, $
+                                       dbbandnames=ss.band[*ss.dilutebandndx].name)
+         endif else begin
+            sed_struct = exofast_multised(teffsed, ss.star[*].logg.value[i], fehsed, $
                                     ss.star[*].av.value[i], $
                                     ss.star[*].distance.value[i], lstarsed, $
                                     ss.star[*].errscale.value[i], $
                                     ss.sedfile, rstar=ss.star[*].rstarsed.value[i],$
-                                    debug=ss.debug, psname=epsname,$
-                                    range=ss.sedrange,specphotpath=ss.specphotpath, $
-                                    sperrscale=ss.specphot.sperrscale.value,$
-                                    spzeropoint=ss.specphot.spzeropoint.value, derivethermal=ss.derivethermal, $
+;                                    debug=ss.debug, psname=epsname, range=ss.sedrange, $
+                                    specphotpath=ss.specphotpath, $
+                                    sperrscale=ss.specphot[*].sperrscale.value[i],$
+                                    spzeropoint=ss.specphot[*].spzeropoint.value[i],$
+                                    derivethermal=ss.derivethermal, $
                                     dbstarndx=ss.dilutestarndx, dbbandnames=ss.band[*ss.dilutebandndx].name)
       endelse
 	  for j=0, n_elements(sed_struct.sedthermal)-1 do begin
@@ -498,9 +518,10 @@ if where(ss.derivethermal eq '') eq -1 then begin
          endif
       endfor
    endfor
+   printandlog, "DERIVETHERMAL calculations complete.", logname
 endif
 
-for i=0L, ss.nband-1 do begin  
+for i=0L, ss.nband-1 do begin
    massfraction = ss.planet[0].mpsun.value/(ss.star[ss.planet[0].starndx].mstar.value + ss.planet[0].mpsun.value)
 ;   fluxfraction = ss.band[i].dilute.value
 ;   ss.band[i].phottobary.value = 1d0/(massfraction-fluxfraction)

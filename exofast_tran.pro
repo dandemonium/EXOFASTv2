@@ -34,7 +34,7 @@
 ;               apply the light travel time correction to the target's
 ;               barycenter
 ;     THERMAL - The thermal emission contribution from the planet, in ppm.
-;     REFLECT - The reflected light from the planet, in ppm. 
+;     REFLECT - The reflected light from the planet, in ppm.
 ;     DILUTE  - The fraction of to basline flux that is due to
 ;               contaminating sources. DILUTE = F2/(F1+F2), where F1
 ;               is the flux from the host star, and F2 is the flux
@@ -59,7 +59,7 @@
 ;               if fitting limb-darkened secondary eclipses with /LIMBDARKSECONDARY .
 ;  OUTPUTS:
 ;    MODEL - The transit model as a function of time
-; 
+;
 ;  REVISION HISTORY:
 ;    2015 (?) - Written by Jason Eastman (CfA)
 ;    2018/10  - Documented (JDE)
@@ -97,7 +97,7 @@ z = exofast_getb2(transitbjd, i=inc, a=ar, tperiastron=tp, period=period,$
 ntime = n_elements(time)
 
 
-if reflect ne 0d0 or ellipsoidal ne 0d0 or beam ne 0d0 then begin 
+if reflect ne 0d0 or ellipsoidal ne 0d0 or beam ne 0d0 then begin
    if e ne 0 then begin
       meananom = 2.d0*!dpi*(1.d0 + (transitbjd - tp)/period mod 1)
       ;; if eccentricitys given, integrate the orbit
@@ -120,7 +120,7 @@ if reflect ne 0d0 or ellipsoidal ne 0d0 or beam ne 0d0 then begin
    ;; standard definition of omega for circular orbits
    endif else begin
      e = e
-	trueanom = 0d0	
+	trueanom = 0d0
 	if n_elements(omega) eq 0 then omega = !dpi/2.d0
    endelse
    sep = (1.-(e*e))/(1.+(e*cos(trueanom)));*q/(1.+q)
@@ -148,7 +148,7 @@ endif
 ;if hotspot ne 0d0 then begin
 ;   ;; This makes flux=0 during primary transit (Thanks Sam Quinn!)
 ;   modelflux-=(1d-6*hotspot/2d0)*(cos(2d0*!dpi*(transitbjd-tc0)/period+phaseshift/360d0)-1d0)*planetvisible
-;endif   
+;endif
 
 ;; phase-dependent reflection off planet
 if reflect ne 0d0 then begin
@@ -157,7 +157,7 @@ if reflect ne 0d0 then begin
    ;modelflux-=1d-6*reflect*cos(2d0*!dpi*(transitbjd-tc0)/period)*planetvisible
   if e eq 0 then begin  ;;; commented out June 6, 2023;
     if n_elements(tc) eq 0 then begin
-      phase = exofast_getphase(e,omega,/primary)  
+      phase = exofast_getphase(e,omega,/primary)
       tc0 = tp - phase*period
     endif else tc0 = tc
    ;; This makes flux=0 during primary transit (Thanks Sam Quinn!)
@@ -189,7 +189,7 @@ endif
 
 if beam ne 0d0 then begin
    if n_elements(tc) eq 0 and n_elements(tc0) eq 0 then begin
-      phase = exofast_getphase(e,omega,/primary)  
+      phase = exofast_getphase(e,omega,/primary)
       tc0 = tp - phase*period
    endif else tc0 = tc
    if e eq 0 then modelflux += beam*1d-6 * sin(2d0*!dpi*(transitbjd-tc)/period) else $

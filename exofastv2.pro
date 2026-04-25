@@ -1679,8 +1679,12 @@ if best[0] eq -1 then begin
    printandlog, 'ERROR: Could not find best combined fit; adjust your starting values and try again. You may want to set the /DEBUG keyword.', logname
    return
 endif
-printandlog, 'Finished AMOEBA fit', logname
+
+;;; Modified by DJS 2026-04-24 to report best-fit values to stdout and log file for convenience
+printandlog, 'Finished AMOEBA fit. The best-fit parameters can be found in ' + strtrim(prefix,2) + 'amoeba.idl', logname
 save, best, filename=prefix + 'amoeba.idl'
+printandlog, 'Best-fit parameter values:', logname
+for i=0, n_elements(name)-1 do printandlog, string(i, name[i], best[i], format='(i3,x,a15,x,f14.6)'), logname
 
 ;; update the parameter array with the chen-derived logks/rp (is this necessary?)
 ;best = str2pars(ss,scale=scale,name=name) 
