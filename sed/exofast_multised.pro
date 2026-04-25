@@ -1,5 +1,5 @@
 ;; The SED constrains Teff, logg, [Fe/H], Extinction, and (Rstar/Distance)^2
-function exofast_multised,teff, logg, feh, av, distance, lstar, errscale, sedfile, alpha=alpha, debug=debug, psname=psname, range=range, specphotpath=specphotpath, logname=logname,redo=redo,blend0=blend0,rstar=rstar, sperrscale=sperrscale,spzeropoint=spzeropoint, verbose=verbose, derivethermal=derivethermal, dbstarndx=dbstarndx, dbbandnames=dbbandnames
+function exofast_multised,teff, logg, feh, av, distance, lstar, errscale, sedfile, alpha=alpha, debug=debug, psname=psname, range=range, specphotpath=specphotpath, logname=logname,redo=redo,blend0=blend0,rstar=rstar, sperrscale=sperrscale,spzeropoint=spzeropoint, verbose=verbose, derivethermal=derivethermal, linkstarndx=linkstarndx, dbstarndx=dbstarndx, dbbandnames=dbbandnames
 
 
 
@@ -156,31 +156,19 @@ endfor
 
 ;;; ADDED BY DJS -- see calls to exofast_multised.pro in mkss.pro and exofast_chi2v2.pro
 if n_elements(thermalbands) gt 0 then begin ; assume 0,1 correspond to EB   hoststar_ndx = 0
-   if ~keyword_set(dthpairs) then begin 
+   if (~keyword_set(linkstarndx) or ~keyword_set(starndx)) then begin 
       hoststar_ndx = 0
       eclipsing_ndx = 1
    endif else begin
-      ;for i=0, n_elements(dthpairs)-1 do begin
-      hoststar_ndx = dthpairs[0]
-      eclipsing_ndx = dthpairs[1]
-      ;endfor
+      hoststar_ndx = starndx
+      eclipsing_ndx = linkstarndx
    endelse
    for b=0, n_elements(thermalbands)-1 do begin
-;      tmpmatch = where(sedbands eq thermalbands[b])
-;	  if ~keyword_set(bandmatch) then bandmatch = tmpmatch else match = [bandmatch, tmpmatch]
-;	  bandmatch = where(sedbands eq 'TESS_TESS.Red',complement=not_tess)
-   ; not_tess = indgen(nbands)   secflux = total(sed[eclipsing_ndx,*]*filter_curves[bandmatch,*])/filter_curve_sum[bandmatch]
       priflux = total(sed[hoststar_ndx,*]*therm_filter_curves[b,*]);/filter_curve_sum[bandmatch]
       secflux = total(sed[eclipsing_ndx,*]*therm_filter_curves[b,*]);/filter_curve_sum[bandmatch]
       sed_struct.sedthermal[b] = 1d6*secflux/priflux;(priflux+secflux)
    endfor
-   ;tesserr = errflux[bandmatch] ; store for later
-   ;if finite(errflux[bandmatch]) then errflux[bandmatch] = !values.d_infinity ; don't penalize the SED
-endif; else begin
-;   thermal = -1*!values.d_infinity;stop
-;   bandmatch = where(sedbands eq 'TESS_TESS.Red',complement=not_tess)
-  ; not_tess = indgen(nbands)
-;endelse
+endif
 
 ;;; Added by DJS: deblend the light curves
 if keyword_set(dbstarndx) then begin
@@ -223,10 +211,7 @@ endif
 for i=0L, nspecfiles-1 do begin
    specphotchi2 = exofast_like((*specphotflux[i])-(*spectrophotometry[i])[*,1]*(1d0+spzeropoint[i]),0d0,(*spectrophotometry[i])[*,2]*sperrscale[i]*(1d0+spzeropoint[i]),/chi2)
    sedchi2 += specphotchi2
-   ;print, i, specphotchi2, spzeropoint[i], sperrscale[i], sedchi2, exofast_like(flux[absolute]-modelfluxpos[absolute],0d0,errflux[absolute]*errscale,/chi2)
 endfor
-
-;if keyword_set(derivethermal) then errflux[bandmatch] = tesserr
 
 if keyword_set(debug) or keyword_set(psname) eq 1 then begin
 

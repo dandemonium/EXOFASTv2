@@ -306,7 +306,6 @@ if n_elements(linkstarndx) ne nplanets and nplanets gt 0 then begin
 endif
 
 if not keyword_set(longcadence) then longcadence=0B
-;if not keyword_set(derivethermal) then derivethermal=0B
 if n_elements(fitthermal) eq 0 then fitthermal = ['']
 if n_elements(derivethermal) eq 0 then derivethermal = ['']
 if n_elements(fitreflect) eq 0 then fitreflect = ['']
@@ -2720,15 +2719,9 @@ for i=0, nband-1 do begin
    match = where(fitthermal eq ss.band[i].name)
    if match[0] ne -1 then begin
       ss.band[i].thermal.fit = 1B
-	  ss.band[i].thermal.derive = 1B
+      ss.band[i].thermal.derive = 1B
       ss.band[i].eclipsedepth.derive = 1B
       if ~keyword_set(silent) then printandlog, "Fitting thermal emission for " + ss.band[i].name + " band",logname
-;'	  if keyword_set(derivethermal) then begin
-;         thermndx = where(ss.band[i].thermal.label eq 'TESS')
-;	     ss.band[thermndx].thermal.fit = 0B
-;         if ~keyword_set(silent) then printandlog, "Actually, deriving thermal emission from SEDs for " + ss.band[i].name + " band; " + $
-;		    "(see chi2v2.pro, multised.pro, derivepars.pro, and getmcmcscale.pro for modifications to undo otherwise).",logname
-;      endif
    endif
 
    match = where(derivethermal eq ss.band[i].name)
@@ -2736,11 +2729,7 @@ for i=0, nband-1 do begin
       ss.band[i].thermal.fit = 0B
 	  ss.band[i].thermal.derive = 1B
       ss.band[i].eclipsedepth.derive = 1B
-	  ;if (where(fitthermal eq ss.band[i].name)) ne -1 then begin
-      ;   printandlog, "[MKSS] ERROR: Do not set both FITTHERMAL and DERIVETHERMAL for the same band!"
-	;	 return, -1
-     ; endif
-      if ~keyword_set(silent) then printandlog, "Deriving thermal emission from SEDs for " + ss.band[i].name + " band."+ string(10B), logname; + $
+      if ~keyword_set(silent) then printandlog, "Deriving 'planet' b's thermal emission from SEDs for " + ss.band[i].name + " band."+ string(10B), logname; + $
 		  ;  "(see chi2v2.pro, multised.pro, derivepars.pro, and getmcmcscale.pro for modifications to undo otherwise).",logname
    endif
 
@@ -2962,8 +2951,6 @@ if file_test(mistsedfile) or file_test(sedfile) or file_test(fluxfile) then begi
          if finite(sed_struct.sedthermal[i]) then begin
             thermndx = where(ss.band[ss.transit[*].bandndx].label eq derivethermal[i])
             ss.band[ss.transit[thermndx].bandndx].thermal.value = sed_struct.sedthermal[i]
-            ;thermalchi2 = ((ss.band[ss.transit[thermndx].bandndx].thermal.value - sed_struct.sedthermal[i])/(sed_struct.sedthermal[i]*0.05d0))^2   
-			;sedchi2 += thermalchi2
          endif
       endfor
 	  
