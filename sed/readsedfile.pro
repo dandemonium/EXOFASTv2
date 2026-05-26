@@ -165,6 +165,19 @@ if dbbandnames ne [''] then begin
          idlfile = filepath(svoname[match[0]]+'.idl',root_dir=getenv('EXOFAST_PATH'),subdir=['sed','filtercurves'])
       endif else idlfile = '' ;; no match
 
+   ;; if not recognized, see if SVO name instead;
+      match = where(dbbandnames[i] eq svoname, nmatch)
+      if nmatch eq 1 then begin
+         idlfile = filepath(svoname[match[0]]+'.idl',root_dir=getenv('EXOFAST_PATH'),subdir=['sed','filtercurves'])
+      endif else idlfile = '' ;; no match
+
+   ;; if not recognized, see if Keivan name (which DJS co-opted for unique names) instead;
+      match = where(dbbandnames[i] eq keivanname, nmatch)
+      if nmatch eq 1 then begin
+         idlfile = filepath(svoname[match[0]]+'.idl',root_dir=getenv('EXOFAST_PATH'),subdir=['sed','filtercurves'])
+      endif else idlfile = '' ;; no match
+
+
    ;; if not recognized, download it
       if not file_test(idlfile) and keyword_set(download_new) then getfilter, dbbandnames[i]
 
