@@ -98,6 +98,11 @@ Unsupported Gaia_BP_MAWf Unsupported Unsupported
 Unsupported Gaia_BP_MAWb Unsupported Unsupported
 Unsupported Gaia_G_MAW Unsupported Unsupported
 Unsupported Gaia_RP_MAW Unsupported Unsupported
+uSHIPER SDSS_u Sloanu GTC_HIPERCAM.u_s # HIPERCAM added by DJS 2026-05-26
+gSHIPER SDSS_g Sloang GTC_HIPERCAM.g_s
+rSHIPER SDSS_r Sloanr GTC_HIPERCAM.r_s
+iSHIPER SDSS_i Sloani GTC_HIPERCAM.i_s
+zSHIPER SDSS_z Sloanz GTC_HIPERCAM.z_s
 Unsupported H158 Unsupported Unsupported
 Unsupported Hipparcos_Hp Unsupported Unsupported
 Unsupported IRAC_3.6 Spit36 Spitzer_IRAC.I1
@@ -231,7 +236,7 @@ Unsupported Washington_M Unsupported Unsupported
 Unsupported Washington_T1 Unsupported Unsupported
 Unsupported Washington_T2 Unsupported Unsupported
 Unsupported Y106 Unsupported Unsupported
-Unsupported Z087 Unsupported  Unsupported
+Unsupported Z087 Unsupported Unsupported
 Unsupported Unsupported Unsupported Gemini_Zorro.EO_562
 Unsupported Unsupported Unsupported Gemini_Zorro.EO_832
 Unsupported Unsupported Unsupported Keck_NIRC2.Brgamma
