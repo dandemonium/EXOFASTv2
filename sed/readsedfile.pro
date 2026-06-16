@@ -170,7 +170,7 @@ if dbbandnames ne [''] then begin
          if nmatch eq 1 then begin
             ;; they used SVO's naming convention, translate
             idlfile = filepath(svoname[match[0]]+'.idl',root_dir=getenv('EXOFAST_PATH'),subdir=['sed','filtercurves'])
-         endif else begin 
+         endif else begin
             ;; see if they used Keivan's naming convention (which DJS co-opted for unique names) instead;
             match = where(dbbandnames[i] eq keivanname, nmatch)
             if nmatch eq 1 then begin
