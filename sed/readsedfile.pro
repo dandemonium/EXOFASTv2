@@ -96,6 +96,7 @@ for i=0L, nlines-1 do begin
 
          negndx = long(strsplit((strsplit(entries[4],'-',/extract))[1],',',/extract))
          good = where(negndx lt nstars and negndx ge 0,complement=bad)
+		 
          if bad[0] ne -1 then printandlog, 'WARNING: STARNDX (' + strtrim(negndx[bad],2) + ') in SEDFILE (' + sedfile +') does not correspond to a star, ignoring', logname
          if good[0] eq -1 then begin
             printandlog, 'WARNING: No good negative STARNDX values in SEDFILE (' + sedfile +') line: ' + line, logname
@@ -160,24 +161,25 @@ if dbbandnames ne [''] then begin
    deblend_filter_curves = dblarr(n_elements(dbbandnames),24000)
    deblend_filter_curve_sum = dblarr(n_elements(dbbandnames))
    for i=0L, n_elements(dbbandnames)-1 do begin
-      match = where(dbbandnames[i] eq claretname,nmatch)
+      match = where(dbbandnames[i] eq claretname, nmatch)
       if nmatch eq 1 then begin
          idlfile = filepath(svoname[match[0]]+'.idl',root_dir=getenv('EXOFAST_PATH'),subdir=['sed','filtercurves'])
-      endif else idlfile = '' ;; no match
-
-   ;; if not recognized, see if SVO name instead;
-      match = where(dbbandnames[i] eq svoname, nmatch)
-      if nmatch eq 1 then begin
-         idlfile = filepath(svoname[match[0]]+'.idl',root_dir=getenv('EXOFAST_PATH'),subdir=['sed','filtercurves'])
-      endif else idlfile = '' ;; no match
-
-   ;; if not recognized, see if Keivan name (which DJS co-opted for unique names) instead;
-      match = where(dbbandnames[i] eq keivanname, nmatch)
-      if nmatch eq 1 then begin
-         idlfile = filepath(svoname[match[0]]+'.idl',root_dir=getenv('EXOFAST_PATH'),subdir=['sed','filtercurves'])
-      endif else idlfile = '' ;; no match
-
-
+      endif else begin
+         ;; see if they used SVO's naming convention instead
+         match = where(dbbandnames[i] eq svoname, nmatch)
+         if nmatch eq 1 then begin
+            ;; they used SVO's naming convention, translate
+            idlfile = filepath(svoname[match[0]]+'.idl',root_dir=getenv('EXOFAST_PATH'),subdir=['sed','filtercurves'])
+         endif else begin 
+            ;; see if they used Keivan's naming convention (which DJS co-opted for unique names) instead;
+            match = where(dbbandnames[i] eq keivanname, nmatch)
+            if nmatch eq 1 then begin
+               ;; they used Keivan's naming convention, translate
+			   idlfile = filepath(svoname[match[0]]+'.idl', root_dir=getenv('EXOFAST_PATH'), $
+			                      subdir=['sed','filtercurves'])
+            endif else idlfile = '' ;; no match
+         endelse
+      endelse
    ;; if not recognized, download it
       if not file_test(idlfile) and keyword_set(download_new) then getfilter, dbbandnames[i]
 

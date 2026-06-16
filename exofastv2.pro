@@ -1598,9 +1598,9 @@ endif
 
 memrequired = double(ss.nchains)*double(maxsteps)*npars*8d0/(1024d0^3)
 printandlog, 'Fit will require ' + strtrim(memrequired,2) + ' GB of RAM for the final structure', logname
-if memrequired gt 2d0 then begin
+if memrequired gt 8d0 then begin
    printandlog, 'WARNING: this likely exceeds your available RAM and may crash after the end of a very long run. You likely want to reduce MAXSTEPS and increase NTHIN by the same factor. If you would like to proceed anyway, type ".con" to continue', logname
-   if ~lmgr(/vm) then stop
+;   if ~lmgr(/vm) then stop
 endif
 printandlog, '', logname
 

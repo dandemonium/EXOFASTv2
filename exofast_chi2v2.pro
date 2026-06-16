@@ -955,15 +955,12 @@ if file_test(ss.mistsedfile) or file_test(ss.fluxfile) or file_test(ss.sedfile) 
 	  ;; DJS: pass derived thermal emission to the corresponding THERMAL parameter
       ;; if dilution is being fit
 	  ;; will need to change this: ideally, derived on per-transit basis, with band.label lookups on per-transit basis
-      ;; CHANGED 2025-06-11 to be a chi^2 penalty instead, to avoid massive slowdown in derivepars.pro after MCMC
       for i=0, n_elements(sed_struct.sedthermal)-1 do begin
          if finite(sed_struct.sedthermal[i]) then begin
             thermndx = where(ss.band[ss.transit[*].bandndx].label eq ss.derivethermal[i])
 			if thermndx[0] ne -1 then $
                ss.band[ss.transit[thermndx].bandndx].thermal.value = sed_struct.sedthermal[i]
-               ;thermalchi2 = ((ss.band[ss.transit[thermndx[0]].bandndx].thermal.value - sed_struct.sedthermal[i])/(sed_struct.sedthermal[i]*0.05d0))^2 $
-			   ;else thermalchi2 = 0
-			;chi2 += thermalchi2
+            ;if (where(strmatch(epsname, '*start*', /fold_case)) and where(strmatch(epsname, '*amoeba*', /fold_case))) ne -1 then printandlog, ss.derivethermal[i] + " Thermal emission amplitude (ppm): " + string(sed_struct.sedthermal[i]), logname
          endif
       endfor
 
