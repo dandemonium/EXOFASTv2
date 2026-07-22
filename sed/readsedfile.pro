@@ -96,6 +96,7 @@ for i=0L, nlines-1 do begin
 
          negndx = long(strsplit((strsplit(entries[4],'-',/extract))[1],',',/extract))
          good = where(negndx lt nstars and negndx ge 0,complement=bad)
+		 
          if bad[0] ne -1 then printandlog, 'WARNING: STARNDX (' + strtrim(negndx[bad],2) + ') in SEDFILE (' + sedfile +') does not correspond to a star, ignoring', logname
          if good[0] eq -1 then begin
             printandlog, 'WARNING: No good negative STARNDX values in SEDFILE (' + sedfile +') line: ' + line, logname

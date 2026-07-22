@@ -466,7 +466,7 @@ endelse
 
 endfor
 
-if where(ss.derivethermal eq '') eq -1 then begin
+if (where(ss.derivethermal eq '') eq -1) and file_test(ss.sedfile) then begin
    printandlog, "DERIVETHERMAL set; re-computing A_T ('thermal emission') from SEDs for posteriors.", logname
    st0 = systime(/seconds)
    sed_struct = exofast_multised(ss.star[*].teffsed.value[0], ss.star[*].logg.value[0], ss.star[*].feh.value[0], $
