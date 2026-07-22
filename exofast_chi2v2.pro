@@ -1225,7 +1225,7 @@ for j=0L, ss.ntran-1 do begin
             secstarflux = starflux[matchband,ss.planet[planetndx].linkstarndx]
 			dilute = 1d0-(starflux[matchband,starndx] + secstarflux)/total(starflux[matchband,matchstar]) 
 
-         end   if else dilute = 1d0-starflux[matchband,starndx]/total(starflux[matchband,matchstar])
+         endif else dilute = 1d0-starflux[matchband,starndx]/total(starflux[matchband,matchstar])
          dilutechi2 = ((ss.transit[j].dilute.value - dilute)/(dilute*0.05d0))^2   
          chi2 += dilutechi2
 
