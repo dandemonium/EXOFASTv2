@@ -1210,7 +1210,6 @@ for j=0L, ss.ntran-1 do begin
    
    if ss.fitdilute[j] then begin
       matchstar = where(ss.seddeblend[j,*])
-	  print, "matchstar:", matchstar
       ;; dilute transit according to other stars' SEDs
       if ss.nstars gt 1 and (matchstar[0] ne -1) then begin
          matchband = (where(*ss.dilutebandndx eq ss.transit[j].bandndx))[0]
