@@ -44,11 +44,12 @@
 ; MODIFICATION HISTORY
 ; 
 ;  2018/03 -- Create documentation -- Jason Eastman (CfA)
+;  2026/06 -- Re-do SB2 support (plus other add-ons) -- Daniel J. Stevens (UM Duluth)
 ;-
 
 function exofast_chi2v2, pars, determinant=determinant, $
                          modelrv=modelrv, modelflux=modelflux, psname=psname, $
-                         derived=derived, loadss=loadss, ss0=ss0
+                         derived=derived, loadss=loadss, ss0=ss0, modelsb2=modelsb2
 
 COMMON chi2_block, ss
 
@@ -1016,72 +1017,8 @@ for j=0, ss.nplanets-1 do begin
    endif
 endfor
 
-
-;; fit the SED with MIST BC tables
-;if file_test(ss.star.mistsedfile) or file_test(ss.star.fluxfile) then begin
-;   if keyword_set(psname) then epsname = psname+'.sed.eps'
-
-;   sedchi2 = 0d0
-
-   ;; the SED can constrain Teff too precisely
-   ;; (they ignore systematics in interferimetric radii on which they're based). 
-   ;; Add a floor for the Teff used everywhere else
-;   if ss.star.teffsed.fit then begin
-;      teffsed = ss.star.teffsed.value
-;      sedchi2 += ((ss.star.teff.value - ss.star.teffsed.value)/(ss.teffsedfloor*ss.star.teffsed.value))^2
-;   endif else teffsed = ss.star.teff.value
-
-;   if ss.star.fehsed.fit then begin
-;      fehsed = ss.star.fehsed.value
-;      sedchi2 += ((ss.star.feh.value - ss.star.fehsed.value)/ss.fehsedfloor)^2
-;   endif else fehsed = ss.star.feh.value
-
-   ;; the SED can constrain FBol too precisely
-   ;; Add a floor for the Fbol used everywhere else
-;   if ss.star.rstarsed.fit then begin
-;      rstarsed = ss.star.rstarsed.value
-;      lstarsed = 4d0*!dpi*rstarsed^2*ss.star.teff.value^4*ss.constants.sigmab/ss.constants.lsun*ss.constants.rsun^2 ;; lsun
-;      lstarsed = 4d0*!dpi*rstarsed^2*teffsed^4*ss.constants.sigmab/ss.constants.lsun*ss.constants.rsun^2 ;; lsun
-;      sedchi2 += ((lstarsed - ss.star.lstar.value)/(ss.fbolsedfloor*lstarsed))^2
-;   endif else begin
-;      rstarsed = ss.star.rstar.value
-;      lstarsed = 4d0*!dpi*rstarsed^2*ss.star.teff.value^4*ss.constants.sigmab/ss.constants.lsun*ss.constants.rsun^2 ;; lsun
-;      lstarsed = 4d0*!dpi*rstarsed^2*teffsed^4*ss.constants.sigmab/ss.constants.lsun*ss.constants.rsun^2 ;; lsun
-;   endelse
-
- ;  if file_test(ss.star.mistsedfile) then begin
-      ;; MIST BC SED
-;      sedchi2 += mistsed(teffsed, ss.star.logg.value,fehsed, ss.star.av.value, ss.star.distance.value, lstarsed, ss.star.errscale.value, ss.star.mistsedfile, debug=ss.debug, psname=epsname)
-;   endif else begin
-      ;; Keivan Stassun's SED
- ;     junk = exofast_sed(ss.star.fluxfile, teffsed, $
-;                         rstarsed,$
-;                         ss.star.av.value, ss.star.distance.value, $
-;                         logg=ss.star.logg.value,met=fehsed,$
-;                         alpha=ss.star.alpha.value,verbose=ss.verbose, $
-;                         f0=f, fp0=fp, ep0=ep, psname=epsname, $
-;                         pc=ss.constants.pc, rsun=ss.constants.rsun, $
-;                         logname=logname, debug=ss.debug, oned=ss.oned, fitgaia=fitgaia)
-;      if ~finite(junk) then begin
-;         if ss.debug or ss.verbose then printandlog, 'sed is bad', ss.logname
-;         return, !values.d_infinity
-;      endif
-;      sedchi2 += exofast_like(f-fp,0d0,ss.star.errscale.value*ep,/chi2)
-;   endelse
-   
-   ;; do some error checking
-;   if ~finite(sedchi2) then begin
-;      if ss.debug or ss.verbose then printandlog, 'sed is bad', ss.logname
-;      return, !values.d_infinity
-;   endif
-;   chi2 += sedchi2
-;   if ss.verbose then printandlog, 'SED penalty = ' + strtrim(sedchi2,2), ss.logname
-
-;endif
-
 ;; RV model (non-interacting planets)
 for j=0, ss.ntel-1 do begin
-
    rv = *(ss.telescope[j].rvptrs)
 
    if (where(rv.err^2 + ss.telescope[j].jittervar.value le 0d0))[0] ne -1 then begin
@@ -1283,10 +1220,12 @@ for j=0L, ss.ntran-1 do begin
 		 ;;; DJS edit 2025-05-23 to account for "thermal emission" of secondary star in EB
 		 if (((where(ss.band[ss.transit[j].bandndx].label eq ss.derivethermal) ne -1) or (where(ss.band[ss.transit[j].bandndx].label eq ss.fitthermal) ne -1)) and (ss.planet[planetndx].linkstarndx ne -1)) then begin ;include the thermal emission!
    		    if ss.verbose then printandlog, "Accounting for " + ss.band[ss.transit[j].bandndx].label + " thermal emission in the deblending procedure...", ss.logname
-            if planetndx eq 0 then secstarflux = starflux[matchband,ss.planet[planetndx].linkstarndx] else secstarflux = 0d0
+
+;            if planetndx eq 0 then secstarflux = starflux[matchband,ss.planet[planetndx].linkstarndx] else secstarflux = 0d0
+            secstarflux = starflux[matchband,ss.planet[planetndx].linkstarndx]
 			dilute = 1d0-(starflux[matchband,starndx] + secstarflux)/total(starflux[matchband,matchstar]) 
 
-         endif else dilute = 1d0-starflux[matchband,starndx]/total(starflux[matchband,matchstar]) 
+         endif else dilute = 1d0-starflux[matchband,starndx]/total(starflux[matchband,matchstar])
          dilutechi2 = ((ss.transit[j].dilute.value - dilute)/(dilute*0.05d0))^2   
          chi2 += dilutechi2
 
