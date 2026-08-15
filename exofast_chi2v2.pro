@@ -1273,6 +1273,7 @@ for j=0L, ss.ntran-1 do begin
    
    if ss.fitdilute[j] then begin
       matchstar = where(ss.seddeblend[j,*])
+	  print, "matchstar:", matchstar
       ;; dilute transit according to other stars' SEDs
       if ss.nstars gt 1 and (matchstar[0] ne -1) then begin
          matchband = (where(*ss.dilutebandndx eq ss.transit[j].bandndx))[0]
@@ -1280,11 +1281,9 @@ for j=0L, ss.ntran-1 do begin
 		 if planetndx ne 0 then printandlog, "deblending planetndx is not 0! it's "+string(planetndx), logname
          starndx = ss.planet[planetndx].starndx
 		 ;;; DJS edit 2025-05-23 to account for "thermal emission" of secondary star in EB
-         ;if (ss.band[ss.transit[j].bandndx].thermal.value 
-		;' if (keyword_set(ss.tra) or keyword_set(ss.derivethermal) then dilute = 1d0-
 		 if (((where(ss.band[ss.transit[j].bandndx].label eq ss.derivethermal) ne -1) or (where(ss.band[ss.transit[j].bandndx].label eq ss.fitthermal) ne -1)) and (ss.planet[planetndx].linkstarndx ne -1)) then begin ;include the thermal emission!
    		    if ss.verbose then printandlog, "Accounting for " + ss.band[ss.transit[j].bandndx].label + " thermal emission in the deblending procedure...", ss.logname
-            if planetndx eq 0 then secstarflux = starflux[matchband,] else secstarflux = 0d0
+            if planetndx eq 0 then secstarflux = starflux[matchband,ss.planet[planetndx].linkstarndx] else secstarflux = 0d0
 			dilute = 1d0-(starflux[matchband,starndx] + secstarflux)/total(starflux[matchband,matchstar]) 
 
          endif else dilute = 1d0-starflux[matchband,starndx]/total(starflux[matchband,matchstar]) 
