@@ -947,10 +947,14 @@ if file_test(ss.mistsedfile) or file_test(ss.fluxfile) or file_test(ss.sedfile) 
                                   ss.star[0].errscale.value, $
                                   ss.sedfile, rstar=ss.star.rstarsed.value,$
                                   debug=ss.debug, psname=epsname,$
-                                  range=ss.sedrange,specphotpath=ss.specphotpath, $
+                                  range=ss.sedrange, specphotpath=ss.specphotpath, $
                                   sperrscale=ss.specphot.sperrscale.value,$
-                                  spzeropoint=ss.specphot.spzeropoint.value, derivethermal=ss.derivethermal, $
-								  dbstarndx=ss.dilutestarndx, dbbandnames=ss.band[*ss.dilutebandndx].name)
+                                  spzeropoint=ss.specphot.spzeropoint.value, $
+								  derivethermal=ss.derivethermal, $
+                                  hoststarndx=ss.planet[*].starndx, $
+								  linkstarndx=ss.planet[*].linkstarndx, $
+								  dbstarndx=ss.dilutestarndx, $
+                                  dbbandnames=ss.band[*ss.dilutebandndx].name)
       sedchi2 += sed_struct.sedchi2
 
 	  ;; DJS: pass derived thermal emission to the corresponding THERMAL parameter
@@ -1217,11 +1221,23 @@ for j=0L, ss.ntran-1 do begin
 		 if planetndx ne 0 then printandlog, "deblending planetndx is not 0! it's "+string(planetndx), logname
          starndx = ss.planet[planetndx].starndx
 		 ;;; DJS edit 2025-05-23 to account for "thermal emission" of secondary star in EB
-		 if (((where(ss.band[ss.transit[j].bandndx].label eq ss.derivethermal) ne -1) or (where(ss.band[ss.transit[j].bandndx].label eq ss.fitthermal) ne -1)) and (ss.planet[planetndx].linkstarndx ne -1)) then begin ;include the thermal emission!
+
+		 if ((where(ss.band[ss.transit[j].bandndx].label eq ss.derivethermal) ne -1) or $
+		    (where(ss.band[ss.transit[j].bandndx].label eq ss.fitthermal) ne -1) then begin ; and $
+
    		    if ss.verbose then printandlog, "Accounting for " + ss.band[ss.transit[j].bandndx].label + " thermal emission in the deblending procedure...", ss.logname
 
-;            if planetndx eq 0 then secstarflux = starflux[matchband,ss.planet[planetndx].linkstarndx] else secstarflux = 0d0
-            secstarflux = starflux[matchband,ss.planet[planetndx].linkstarndx]
+            if ss.planet[planetndx].linkstarndx ge 0 then begin
+               if ss.verbose then printandlog, "Thermal emission from planet index / star index: " + string(planetndx) + "/" + string(ss.planet[planetndx].linkstarndx), ss.logname
+;               if planetndx eq 0 then secstarflux = starflux[matchband,ss.planet[planetndx].linkstarndx] else secstarflux = 0d0
+
+               secstarflux = starflux[matchband,ss.planet[planetndx].linkstarndx]
+
+               if ss.verbose then printandlog, "starndx, matchstar:"+string(starndx,matchstar), ss.logname
+            endif else begin
+               printandlog, "ERROR [exofast_chi2v2.pro]: cannot deblend planet with linkstarndx="+string(ss.planet[planetndx].linkstarndx)+"; assuming planet is star 1", ss.logname
+               secstarflux = starflux[matchband,1]
+            endelse
 			dilute = 1d0-(starflux[matchband,starndx] + secstarflux)/total(starflux[matchband,matchstar]) 
 
          endif else dilute = 1d0-starflux[matchband,starndx]/total(starflux[matchband,matchstar])
@@ -1329,7 +1345,6 @@ for j=0L, ss.ntran-1 do begin
                                     ellipsoidal=band.ellipsoidal.value, $
 ;                                    beam=band.beam.value, $
                                     beam=ss.planet[i].beam.value,$
-;                                    dilute=band.dilute.value,$
                                     dilute=ss.transit[j].dilute.value,$
                                     tc=ss.planet[i].tc.value,$
                                     rstar=ss.star[ss.planet[i].starndx].rstar.value/AU,$
@@ -1356,7 +1371,6 @@ for j=0L, ss.ntran-1 do begin
                                     ellipsoidal=band.ellipsoidal.value, $
 ;                                    beam=band.beam.value, $
                                     beam=ss.planet[i].beam.value,$
-;                                    dilute=band.dilute.value,$
                                     dilute=ss.transit[j].dilute.value,$
                                     tc=ss.planet[i].tc.value,$
                                     rstar=ss.star[ss.planet[i].starndx].rstar.value/AU,$

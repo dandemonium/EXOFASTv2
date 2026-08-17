@@ -475,12 +475,14 @@ if (where(ss.derivethermal eq '') eq -1) and file_test(ss.sedfile) then begin
                                  4d0*!dpi*ss.star[*].rstarsed.value[0]^2*ss.star[*].teffsed.value[0]^4*ss.constants.sigmab/ss.constants.lsun*ss.constants.rsun^2, $
                                  ss.star[*].errscale.value[0], $
                                  ss.sedfile, rstar=ss.star[*].rstarsed.value[0],$
-;                                 debug=ss.debug, psname=epsname, range=ss.sedrange,$
+                                 debug=ss.debug, psname=epsname, range=ss.sedrange,$
                                  sperrscale=ss.specphot.sperrscale.value[0], $
                                  spzeropoint=ss.specphot.spzeropoint.value[0], $
-                                 derivethermal=ss.derivethermal);, $
-;                                 dbstarndx=ss.dilutestarndx, $
-;                                 dbbandnames=ss.band[*ss.dilutebandndx].name)
+                                 derivethermal=ss.derivethermal, $
+								 hoststarndx=ss.planet[*].starndx, $
+                                 linkstarndx=ss.planet[*].linkstarndx, $
+                                 dbstarndx=ss.dilutestarndx, $
+                                 dbbandnames=ss.band[*ss.dilutebandndx].name)
    sedtime = systime(/seconds) - st0
    printandlog, 'It takes ' + strtrim(sedtime,2) + ' seconds to calculate a single SED model.', logname
    printandlog, 'This may take up to ' + string(sedtime*n_elements(ss.star[0].teffsed.value)/60d0,format='(f0.1)') + ' minutes.' , logname
@@ -509,7 +511,10 @@ if (where(ss.derivethermal eq '') eq -1) and file_test(ss.sedfile) then begin
                                     sperrscale=ss.specphot[*].sperrscale.value[i],$
                                     spzeropoint=ss.specphot[*].spzeropoint.value[i],$
                                     derivethermal=ss.derivethermal, $
-                                    dbstarndx=ss.dilutestarndx, dbbandnames=ss.band[*ss.dilutebandndx].name)
+									hoststarndx=ss.planet[*].starndx, $
+									linkstarndx=ss.planet[*].linkstarndx, $
+                                    dbstarndx=ss.dilutestarndx, $
+									dbbandnames=ss.band[*ss.dilutebandndx].name)
       endelse
 	  for j=0, n_elements(sed_struct.sedthermal)-1 do begin
          if finite(sed_struct.sedthermal[j]) then begin

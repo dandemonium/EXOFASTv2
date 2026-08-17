@@ -2943,8 +2943,9 @@ if file_test(mistsedfile) or file_test(sedfile) or file_test(fluxfile) then begi
                                  replicate(0d0,nstars), replicate(10d0,nstars), replicate(1d0,nstars), $
                                  replicate(1d0,nstars), sedfile, /redo, specphotpath=specphotpath,$
                                  blend0=blend,rstar=replicate(1d0,nstars),$
-								 sperrscale=ss.specphot.sperrscale.value[0], $
-								 spzeropoint=ss.specphot.spzeropoint.value[0], derivethermal=derivethermal, $
+								 sperrscale=ss.specphot.sperrscale.value[0], spzeropoint=ss.specphot.spzeropoint.value[0], $
+                                 derivethermal=derivethermal, linkstarndx=ss.planet[*].linkstarndx, $
+								 hoststarndx=ss.planet[*].starndx, $
 								 dbstarndx=ss.dilutestarndx, dbbandnames=ss.band[*ss.dilutebandndx].name)
       sedchi2 = sed_struct.sedchi2
 

@@ -1,5 +1,5 @@
 ;; The SED constrains Teff, logg, [Fe/H], Extinction, and (Rstar/Distance)^2
-function exofast_multised,teff, logg, feh, av, distance, lstar, errscale, sedfile, alpha=alpha, debug=debug, psname=psname, range=range, specphotpath=specphotpath, logname=logname,redo=redo,blend0=blend0,rstar=rstar, sperrscale=sperrscale,spzeropoint=spzeropoint, verbose=verbose, derivethermal=derivethermal, linkstarndx=linkstarndx, dbstarndx=dbstarndx, dbbandnames=dbbandnames
+function exofast_multised,teff, logg, feh, av, distance, lstar, errscale, sedfile, alpha=alpha, debug=debug, psname=psname, range=range, specphotpath=specphotpath, logname=logname,redo=redo,blend0=blend0,rstar=rstar, sperrscale=sperrscale,spzeropoint=spzeropoint, verbose=verbose, derivethermal=derivethermal, linkstarndx=linkstarndx, hoststarndx=hoststarndx, dbstarndx=dbstarndx, dbbandnames=dbbandnames
 
 
 
@@ -156,15 +156,15 @@ endfor
 
 ;;; ADDED BY DJS -- see calls to exofast_multised.pro in mkss.pro and exofast_chi2v2.pro
 if n_elements(thermalbands) gt 0 then begin ; assume 0,1 correspond to EB   hoststar_ndx = 0
-   if (~keyword_set(linkstarndx) or ~keyword_set(starndx)) then begin 
-      hoststar_ndx = 0
+   if (~(linkstarndx ge 0) or ~(hoststarndx ge 0)) then begin 
+      hoststarndx = 0
       eclipsing_ndx = 1
    endif else begin
-      hoststar_ndx = starndx
+      hoststarndx = hoststarndx
       eclipsing_ndx = linkstarndx
    endelse
    for b=0, n_elements(thermalbands)-1 do begin
-      priflux = total(sed[hoststar_ndx,*]*therm_filter_curves[b,*]);/filter_curve_sum[bandmatch]
+      priflux = total(sed[hoststarndx,*]*therm_filter_curves[b,*]);/filter_curve_sum[bandmatch]
       secflux = total(sed[eclipsing_ndx,*]*therm_filter_curves[b,*]);/filter_curve_sum[bandmatch]
       sed_struct.sedthermal[b] = 1d6*secflux/priflux;(priflux+secflux)
    endfor
