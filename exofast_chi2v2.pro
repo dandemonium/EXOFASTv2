@@ -1223,7 +1223,7 @@ for j=0L, ss.ntran-1 do begin
 		 ;;; DJS edit 2025-05-23 to account for "thermal emission" of secondary star in EB
 
 		 if ((where(ss.band[ss.transit[j].bandndx].label eq ss.derivethermal) ne -1) or $
-		    (where(ss.band[ss.transit[j].bandndx].label eq ss.fitthermal) ne -1) then begin ; and $
+		    (where(ss.band[ss.transit[j].bandndx].label eq ss.fitthermal) ne -1)) then begin ; and $
 
    		    if ss.verbose then printandlog, "Accounting for " + ss.band[ss.transit[j].bandndx].label + " thermal emission in the deblending procedure...", ss.logname
 
