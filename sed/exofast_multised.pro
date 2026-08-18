@@ -105,7 +105,7 @@ for j=0L, nstars-1 do begin
       return, sed_struct ; edited by DJS
    endif ;; convert to observed flux -- interpolation breaks flux=sigma*T^4, renormalize
    constants = mkconstants()
-   fbol0 = (lstar[j]*constants.lsun)/(4d0*!dpi*(distance[j]*pc)^2) 
+   fbol0 = (lstar[j]*constants.lsun)/(4d0*!dpi*(distance[j]*pc)^(2d0))
    fbol1 = total(lamflam1temp*dlambda/wavelength) 
    lamflam1=lamflam1temp/fbol1*fbol0
 
@@ -195,7 +195,7 @@ print, teff, logg, feh, av, distance, lstar,$
        errscale,$
        spzeropoint[0], sperrscale[0],$
        spzeropoint[1], sperrscale[1],$
-       total(((flux[absolute]-modelfluxpos[absolute])/errflux[absolute]*errscale)^2),$
+       total(((flux[absolute]-modelfluxpos[absolute])/errflux[absolute]*errscale)^(2),$
        total((((*specphotflux[0])-(*spectrophotometry[0])[*,1]*(1d0+spzeropoint[0]))/((*spectrophotometry[0])[*,2]*sperrscale[0]*(1d0+spzeropoint[0])))^2),$
        total((((*specphotflux[1])-(*spectrophotometry[1])[*,1]*(1d0+spzeropoint[1]))/((*spectrophotometry[1])[*,2]*sperrscale[1]*(1d0+spzeropoint[1])))^2),$
        exofast_like(flux[absolute]-modelfluxpos[absolute],0d0,errflux[absolute]*errscale,/chi2),$
@@ -533,14 +533,14 @@ if keyword_set(debug) or keyword_set(psname) eq 1 then begin
 
 	  ;; model flux files for each star
       tmpflux = dblarr(nstars, nbands)
-	  
+
       for j=0, nstars - 1 do begin
 	  
          for i=0L, nbands-1 do begin
             tmpflux[j,i] = total(sed[j,*]*filter_curves[i,*])/filter_curve_sum[i]
          endfor
 		 ;; bandpass-weighted model fluxes
-         exofast_forprint, sedbands, weff, widtheff, flux, errflux, tmpflux[j,*], flux-tmpflux[j,*], startxt, $
+S         exofast_forprint, sedbands, weff, widtheff, flux, errflux, tmpflux[j,*], flux-tmpflux[j,*], startxt, $
 		                   textout=residualfilename+'.fluxes.star_'+strtrim(j,1)+'.txt', $
                            comment='# Filtername, Center wavelength (um), half bandpass (um), ' + $
 						           'obs. lamflam (cgs), obs. err (cgs), ' + $
