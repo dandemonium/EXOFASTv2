@@ -498,6 +498,8 @@ if (where(ss.derivethermal eq '') eq -1) and file_test(ss.sedfile) then begin
                                        ss.sedfile, rstar=ss.star[*].rstarsed.value[i],$
                                        debug=ss.debug, psname=epsname, range=ss.sedrange,$
                                        derivethermal=ss.derivethermal, $
+                                       linkstarndx=ss.planet[*].starndx, $
+                                       hoststarndx=ss.planet[*].linkstarndx, $
                                        dbstarndx=ss.dilutestarndx, $
                                        dbbandnames=ss.band[*ss.dilutebandndx].name)
          endif else begin

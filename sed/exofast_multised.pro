@@ -195,9 +195,9 @@ print, teff, logg, feh, av, distance, lstar,$
        errscale,$
        spzeropoint[0], sperrscale[0],$
        spzeropoint[1], sperrscale[1],$
-       total(((flux[absolute]-modelfluxpos[absolute])/errflux[absolute]*errscale)^(2),$
-       total((((*specphotflux[0])-(*spectrophotometry[0])[*,1]*(1d0+spzeropoint[0]))/((*spectrophotometry[0])[*,2]*sperrscale[0]*(1d0+spzeropoint[0])))^2),$
-       total((((*specphotflux[1])-(*spectrophotometry[1])[*,1]*(1d0+spzeropoint[1]))/((*spectrophotometry[1])[*,2]*sperrscale[1]*(1d0+spzeropoint[1])))^2),$
+       total(((flux[absolute]-modelfluxpos[absolute])/errflux[absolute]*errscale)^(2d0)),$
+       total((((*specphotflux[0])-(*spectrophotometry[0])[*,1]*(1d0+spzeropoint[0]))/((*spectrophotometry[0])[*,2]*sperrscale[0]*(1d0+spzeropoint[0])))^(2d0)),$
+       total((((*specphotflux[1])-(*spectrophotometry[1])[*,1]*(1d0+spzeropoint[1]))/((*spectrophotometry[1])[*,2]*sperrscale[1]*(1d0+spzeropoint[1])))^(2d0)),$
        exofast_like(flux[absolute]-modelfluxpos[absolute],0d0,errflux[absolute]*errscale,/chi2),$
        exofast_like((*specphotflux[0])-(*spectrophotometry[0])[*,1]*(1d0+spzeropoint[0]),0d0,(*spectrophotometry[0])[*,2]*sperrscale[0]*(1d0+spzeropoint[0]),/chi2),$
        exofast_like((*specphotflux[1])-(*spectrophotometry[1])[*,1]*(1d0+spzeropoint[1]),0d0,(*spectrophotometry[1])[*,2]*sperrscale[1]*(1d0+spzeropoint[1]),/chi2),$
@@ -540,7 +540,7 @@ if keyword_set(debug) or keyword_set(psname) eq 1 then begin
             tmpflux[j,i] = total(sed[j,*]*filter_curves[i,*])/filter_curve_sum[i]
          endfor
 		 ;; bandpass-weighted model fluxes
-S         exofast_forprint, sedbands, weff, widtheff, flux, errflux, tmpflux[j,*], flux-tmpflux[j,*], startxt, $
+         exofast_forprint, sedbands, weff, widtheff, flux, errflux, tmpflux[j,*], flux-tmpflux[j,*], startxt, $
 		                   textout=residualfilename+'.fluxes.star_'+strtrim(j,1)+'.txt', $
                            comment='# Filtername, Center wavelength (um), half bandpass (um), ' + $
 						           'obs. lamflam (cgs), obs. err (cgs), ' + $
