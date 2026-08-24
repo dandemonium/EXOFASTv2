@@ -160,8 +160,8 @@ if n_elements(thermalbands) gt 0 then begin ; assume 0,1 correspond to EB   host
       hoststarndx = 0
       eclipsing_ndx = 1
    endif else begin
-      hoststarndx = hoststarndx
-      eclipsing_ndx = linkstarndx
+      hoststarndx = hoststarndx[0]
+      eclipsing_ndx = linkstarndx[0]
    endelse
    for b=0, n_elements(thermalbands)-1 do begin
       priflux = total(sed[hoststarndx,*]*therm_filter_curves[b,*]);/filter_curve_sum[bandmatch]
@@ -178,7 +178,7 @@ if keyword_set(dbstarndx) then begin
             sed_struct.lcblendflux[i,j] = total(sed[dbstarndx[j],*]*deblend_filter_curves[i,*])/deblend_filter_curve_sum[i]
          endfor
       endfor
-   endif ;else lcblendflux = !values.d_infinity
+   endif else lcblendflux = 0d0 ;!values.d_infinity
 endif
 sedchi2=0d0
 ;; chi2 from broad band photometry
@@ -195,9 +195,9 @@ print, teff, logg, feh, av, distance, lstar,$
        errscale,$
        spzeropoint[0], sperrscale[0],$
        spzeropoint[1], sperrscale[1],$
-       total(((flux[absolute]-modelfluxpos[absolute])/errflux[absolute]*errscale)^(2),$
-       total((((*specphotflux[0])-(*spectrophotometry[0])[*,1]*(1d0+spzeropoint[0]))/((*spectrophotometry[0])[*,2]*sperrscale[0]*(1d0+spzeropoint[0])))^2),$
-       total((((*specphotflux[1])-(*spectrophotometry[1])[*,1]*(1d0+spzeropoint[1]))/((*spectrophotometry[1])[*,2]*sperrscale[1]*(1d0+spzeropoint[1])))^2),$
+       total(((flux[absolute]-modelfluxpos[absolute])/errflux[absolute]*errscale)^(2d0)),$
+       total((((*specphotflux[0])-(*spectrophotometry[0])[*,1]*(1d0+spzeropoint[0]))/((*spectrophotometry[0])[*,2]*sperrscale[0]*(1d0+spzeropoint[0])))^(2d0)),$
+       total((((*specphotflux[1])-(*spectrophotometry[1])[*,1]*(1d0+spzeropoint[1]))/((*spectrophotometry[1])[*,2]*sperrscale[1]*(1d0+spzeropoint[1])))^(2d0)),$
        exofast_like(flux[absolute]-modelfluxpos[absolute],0d0,errflux[absolute]*errscale,/chi2),$
        exofast_like((*specphotflux[0])-(*spectrophotometry[0])[*,1]*(1d0+spzeropoint[0]),0d0,(*spectrophotometry[0])[*,2]*sperrscale[0]*(1d0+spzeropoint[0]),/chi2),$
        exofast_like((*specphotflux[1])-(*spectrophotometry[1])[*,1]*(1d0+spzeropoint[1]),0d0,(*spectrophotometry[1])[*,2]*sperrscale[1]*(1d0+spzeropoint[1]),/chi2),$
@@ -540,7 +540,7 @@ if keyword_set(debug) or keyword_set(psname) eq 1 then begin
             tmpflux[j,i] = total(sed[j,*]*filter_curves[i,*])/filter_curve_sum[i]
          endfor
 		 ;; bandpass-weighted model fluxes
-S         exofast_forprint, sedbands, weff, widtheff, flux, errflux, tmpflux[j,*], flux-tmpflux[j,*], startxt, $
+         exofast_forprint, sedbands, weff, widtheff, flux, errflux, tmpflux[j,*], flux-tmpflux[j,*], startxt, $
 		                   textout=residualfilename+'.fluxes.star_'+strtrim(j,1)+'.txt', $
                            comment='# Filtername, Center wavelength (um), half bandpass (um), ' + $
 						           'obs. lamflam (cgs), obs. err (cgs), ' + $

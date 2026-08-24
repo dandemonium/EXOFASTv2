@@ -1201,11 +1201,16 @@ endfor
 if (*ss.dilutebandndx)[0] ne -1 then begin
    starndx = ss.dilutestarndx
    bandndx = *ss.dilutebandndx
-   if file_test(ss.sedfile) then starflux = sed_struct.lcblendflux else $
-     starflux = mistdeblend(ss.star[starndx].teff.value, ss.star[starndx].logg.value,$
-                      ss.star[starndx].feh.value, ss.star[starndx].av.value, $
-                      ss.star[starndx].distance.value, $
-                      ss.star[starndx].lstar.value, ss.band[bandndx].name)
+   if file_test(ss.sedfile) then begin
+      if ss.verbose then printandlog, "Using NextGen SEDs for deblending...", ss.logname
+      starflux = sed_struct.lcblendflux
+   endif else begin
+      if ss.verbose then printandlog, "Using MIST BCs for deblending...", ss.logname
+      starflux = mistdeblend(ss.star[starndx].teff.value, ss.star[starndx].logg.value,$
+                             ss.star[starndx].feh.value, ss.star[starndx].av.value, $
+                             ss.star[starndx].distance.value, $
+                             ss.star[starndx].lstar.value, ss.band[bandndx].name)
+   endelse
 endif
 
 ;; Transit model
@@ -1223,7 +1228,7 @@ for j=0L, ss.ntran-1 do begin
 		 ;;; DJS edit 2025-05-23 to account for "thermal emission" of secondary star in EB
 
 		 if ((where(ss.band[ss.transit[j].bandndx].label eq ss.derivethermal) ne -1) or $
-		    (where(ss.band[ss.transit[j].bandndx].label eq ss.fitthermal) ne -1)) then begin ; and $
+		    (where(ss.band[ss.transit[j].bandndx].label eq ss.fitthermal) ne -1)) then begin
 
    		    if ss.verbose then printandlog, "Accounting for " + ss.band[ss.transit[j].bandndx].label + " thermal emission in the deblending procedure...", ss.logname
 
@@ -1233,7 +1238,7 @@ for j=0L, ss.ntran-1 do begin
 
                secstarflux = starflux[matchband,ss.planet[planetndx].linkstarndx]
 
-               if ss.verbose then printandlog, "starndx, matchstar:"+string(starndx,matchstar), ss.logname
+;               if ss.verbose then printandlog, "starndx, matchstar:"+string(starndx,matchstar), ss.logname
             endif else begin
                printandlog, "ERROR [exofast_chi2v2.pro]: cannot deblend planet with linkstarndx="+string(ss.planet[planetndx].linkstarndx)+"; assuming planet is star 1", ss.logname
                secstarflux = starflux[matchband,1]
