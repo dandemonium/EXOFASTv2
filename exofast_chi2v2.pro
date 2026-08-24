@@ -1233,7 +1233,7 @@ for j=0L, ss.ntran-1 do begin
    		    if ss.verbose then printandlog, "Accounting for " + ss.band[ss.transit[j].bandndx].label + " thermal emission in the deblending procedure...", ss.logname
 
             if ss.planet[planetndx].linkstarndx ge 0 then begin
-               if ss.verbose then printandlog, "Thermal emission from planet index / star index: " + string(planetndx) + "/" + string(ss.planet[planetndx].linkstarndx), ss.logname
+;               if ss.verbose then printandlog, "Thermal emission from planet index / star index: " + string(planetndx) + "/" + string(ss.planet[planetndx].linkstarndx), ss.logname
 ;               if planetndx eq 0 then secstarflux = starflux[matchband,ss.planet[planetndx].linkstarndx] else secstarflux = 0d0
 
                secstarflux = starflux[matchband,ss.planet[planetndx].linkstarndx]
