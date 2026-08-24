@@ -63,6 +63,7 @@ if strpos(output[2],'Invalid object name') ne -1 then begin
 endif
 
 match = where(strtrim(output,2) eq '</maxValueSandF>')
+
 ; maxav = strtrim((strsplit(output[match-1]*3.1d0*1.5d0*0.87d0,'(',/extract))[0],2)
 maxav = strtrim((strsplit(output[match-1]*3.1d0,'(',/extract))[0],2)
 
