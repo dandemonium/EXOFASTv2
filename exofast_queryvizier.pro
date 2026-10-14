@@ -160,7 +160,7 @@ function exofast_Queryvizier, catalog, target, dis, VERBOSE=verbose, CFA=CFA,  $
       ENDIF   
  
  if keyword_set(cfa) then host = "vizier.cfa.harvard.edu" $
-                       else  host = "webviz.u-strasbg.fr" 
+                       else  host = "vizier.cds.unistra.fr"
  silent = keyword_set(silent)
  
   if N_elements(catalog) EQ 0 then $
