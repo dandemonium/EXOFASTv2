@@ -2106,7 +2106,7 @@ spzeropoint.description = 'SED zero point fractional correction'
 spzeropoint.latex = 'SP_{ZP}'
 spzeropoint.label = 'spzeropoint'
 spzeropoint.value = 0d0
-spzeropoint.scale = 0.1d0
+spzeropoint.scale = 0.5d0
 spzeropoint.fit = 0
 spzeropoint.derive = 0
 
