@@ -924,6 +924,14 @@ fbol.label = 'fbol'
 fbol.cgs = 1d0
 fbol.derive = 0d0
 
+angdiam = parameter
+angdiam.unit = 'uas'
+angdiam.description = 'Angular Diameter'
+angdiam.latex = '\theta_D'
+angdiam.label = 'angdiam'
+angdiam.cgs = 1d0
+angdiam.derive = 0d0
+
 ra = parameter
 ra.value = 0d0
 ra.scale = 0.1d0
@@ -2098,7 +2106,7 @@ spzeropoint.description = 'SED zero point fractional correction'
 spzeropoint.latex = 'SP_{ZP}'
 spzeropoint.label = 'spzeropoint'
 spzeropoint.value = 0d0
-spzeropoint.scale = 0.5d0
+spzeropoint.scale = 0.1d0
 spzeropoint.fit = 0
 spzeropoint.derive = 0
 
@@ -2138,6 +2146,7 @@ star = create_struct(mstar.label,mstar,$
                      rvabs.label,rvabs,$ ;; astrometry
                      parallax.label,parallax,$
                      distance.label,distance,$
+                     angdiam.label,angdiam,$
                      slope.label,slope,$
                      quad.label,quad,$
                      'fluxfile',' ',$
@@ -2679,6 +2688,7 @@ for i=0, nplanets-1 do begin
 
    if fitlogmp[i] then begin
       ss.planet[i].logmp.fit = 1
+      ;ss.planet[i].cosi.fit = 1
       ss.planet[i].mpsun.fit = 0
    endif
    if fitrp[i] then begin
@@ -2987,6 +2997,7 @@ if file_test(mistsedfile) or file_test(sedfile) or file_test(fluxfile) then begi
       ss.star[starsused[i]].parallax.derive = 1
       ss.star[starsused[i]].av.fit = 1
       ss.star[starsused[i]].av.derive = 1
+      ss.star[starsused[i]].angdiam.derive = 1
       
       if teffsedfloor ne 0d0 then begin
          ss.star[starsused[i]].teffsed.fit = 1

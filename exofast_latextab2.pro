@@ -115,7 +115,8 @@ masternotes = ['Uses measured mass and estimated radius from \citet{Chen:2017}',
                "Use this to model TTVs, e",$                                                                     ;; 15
                "This If you are modeling TTVs, this is the transit time you want",$                              ;; 16
                "Time of superior conjunction is commonly reported as the ``occultation time''",$                 ;; 17
-               'See Table 3 in \citet{Eastman:2019} for a detailed description of all parameters']               ;; 18
+               'See Table 3 in \citet{Eastman:2019} for a detailed description of all parameters',$              ;; 18
+               'Calculated as $\arctan(2R_*/d)$']                                                                ;; 19
 
 ;; these are the names of parameters that are influenced by the Chen &
 ;; Kipping mass estimate (given a radius)
@@ -160,6 +161,12 @@ endif
 if ss.planet[0].vcve.fit then begin
    notendx = [[notendx],$
               ['vcve','12']]
+endif
+
+;; these notes are only neccesary if SED is fit
+if ss.star[0].distance.fit then begin
+   notendx = [[notendx],$
+               ['angdiam','19']]
 endif
 
 ;; these notes are only neccesary if the Chen & Kipping relation is used

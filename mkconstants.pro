@@ -31,6 +31,7 @@ constants = create_struct('G', 6.67408d-8,$           ;; Gravitational Constant 
                           'meter',100d0,$             ;; meter (cm)
                           ;; derived constants  
                           'pc',0d0,$                  ;; parsec (cm)
+                          'mas',206265d6,$            ;; radian (microarcseconds)
                           'GravitySun',0d0,$          ;; Surface gravity of sun (cm/s^2)
                           'RhoSun',0d0)               ;; Solar Density (g/cm^3)
 
